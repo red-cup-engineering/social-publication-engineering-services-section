@@ -1,0 +1,224 @@
+import { createHash } from "node:crypto";
+
+const MAX_TEXT_BYTES = 20_000;
+const MAX_CARD_TITLE_BYTES = 300;
+const MAX_CARD_DESCRIPTION_BYTES = 1_000;
+const MAX_RESPONSE_BYTES = 1_000_000;
+const BLUESKY_POST_COLLECTION = "app.bsky.feed.post";
+
+function authorizedCapability(value, provider) {
+  if (typeof value !== "function") throw new TypeError(`${provider} operation requires an attenuated authorizedFetch capability`);
+  return value;
+}
+
+function noAuthorization(headers = {}) {
+  const names = headers instanceof Headers ? [...headers.keys()] : Object.keys(headers);
+  if (names.some((name) => name.toLowerCase() === "authorization")) {
+    throw new TypeError("authorization must be added by the customer capability, not supplied to the provider");
+  }
+}
+
+function exactUrl(value, label) {
+  let url;
+  try { url = new URL(value); } catch { throw new TypeError(`${label} must be an absolute URL`); }
+  if (!['http:', 'https:'].includes(url.protocol)) throw new TypeError(`${label} must use HTTP or HTTPS`);
+  if (url.username || url.password) throw new TypeError(`${label} must not contain embedded credentials`);
+  return url.href;
+}
+
+function serviceOrigin(value, label) {
+  let url;
+  try { url = new URL(value); } catch { throw new TypeError(`${label} must be an absolute URL`); }
+  const loopback = url.hostname === "127.0.0.1" || url.hostname === "localhost" || url.hostname === "::1";
+  if (url.protocol !== "https:" && !(loopback && url.protocol === "http:")) throw new TypeError(`${label} must use HTTPS outside loopback development`);
+  if (url.username || url.password || url.search || url.hash) throw new TypeError(`${label} must be an origin without credentials, query, or fragment`);
+  url.pathname = "/";
+  return url.origin;
+}
+
+function text(value, label, { required = true, maxBytes = MAX_TEXT_BYTES } = {}) {
+  if (value === undefined || value === null) {
+    if (required) throw new TypeError(`${label} is required`);
+    return undefined;
+  }
+  if (typeof value !== "string") throw new TypeError(`${label} must be text`);
+  const normalized = value.trim();
+  if (required && normalized === "") throw new TypeError(`${label} must not be empty`);
+  if (Buffer.byteLength(normalized) > maxBytes) throw new TypeError(`${label} exceeds its bounded size`);
+  return normalized;
+}
+
+function isoInstant(value, label) {
+  if (typeof value !== "string" || !Number.isFinite(Date.parse(value))) throw new TypeError(`${label} must be a finite ISO timestamp`);
+  return new Date(value).toISOString();
+}
+
+function stableJson(value) {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(",")}}`;
+}
+
+export function niDigest(value) {
+  const digest = createHash("sha256").update(stableJson(value)).digest("base64url");
+  return `ni:///sha-256;${digest}`;
+}
+
+export function publicationIntent({ canonicalUrl, text: body, title, description, languages = ["en"], kind = "article" } = {}) {
+  const canonical = exactUrl(canonicalUrl, "canonicalUrl");
+  const message = text(body, "text");
+  const normalizedTitle = text(title, "title", { required: false, maxBytes: MAX_CARD_TITLE_BYTES });
+  const normalizedDescription = text(description, "description", { required: false, maxBytes: MAX_CARD_DESCRIPTION_BYTES });
+  if (!Array.isArray(languages) || languages.length < 1 || languages.length > 8 || languages.some((lang) => typeof lang !== "string" || !/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/u.test(lang))) {
+    throw new TypeError("languages must be 1..8 BCP-47-like language tags");
+  }
+  if (!['article', 'update', 'analysis', 'announcement'].includes(kind)) throw new TypeError("kind is not an admitted publication intent kind");
+  const bodyValue = Object.freeze({
+    type: "SocialPublicationIntent",
+    version: 1,
+    canonicalUrl: canonical,
+    text: message,
+    ...(normalizedTitle === undefined ? {} : { title: normalizedTitle }),
+    ...(normalizedDescription === undefined ? {} : { description: normalizedDescription }),
+    languages: Object.freeze([...languages]),
+    kind,
+  });
+  return Object.freeze({ id: niDigest(bodyValue), ...bodyValue });
+}
+
+async function boundedJson(response, operation) {
+  const raw = await response.text();
+  if (Buffer.byteLength(raw) > MAX_RESPONSE_BYTES) throw new TypeError(`${operation} response exceeds the bounded JSON limit`);
+  if (!response.ok) throw new Error(`${operation} ${response.status}: ${raw.slice(0, 400)}`);
+  try { return JSON.parse(raw); } catch { throw new TypeError(`${operation} returned malformed JSON`); }
+}
+
+export function publicationReceipt({ provider, intent, externalId, externalUrl, observedAt, responseDigest } = {}) {
+  if (!['bluesky', 'facebook-page'].includes(provider)) throw new TypeError("publication receipt provider is not admitted");
+  if (!intent || intent.type !== "SocialPublicationIntent" || typeof intent.id !== "string" || !intent.id.startsWith("ni:///sha-256;")) throw new TypeError("publication receipt requires an admitted intent");
+  const id = text(externalId, "externalId", { maxBytes: 500 });
+  const url = externalUrl === undefined ? undefined : exactUrl(externalUrl, "externalUrl");
+  const at = isoInstant(observedAt, "observedAt");
+  const body = Object.freeze({
+    type: "SocialPublicationReceipt",
+    version: 1,
+    provider,
+    intent: intent.id,
+    externalId: id,
+    ...(url === undefined ? {} : { externalUrl: url }),
+    observedAt: at,
+    ...(responseDigest === undefined ? {} : { responseDigest }),
+  });
+  return Object.freeze({ id: niDigest(body), ...body });
+}
+
+function did(value) {
+  if (typeof value !== "string" || !/^did:[a-z0-9]+:[A-Za-z0-9._:%-]+$/u.test(value)) throw new TypeError("repoDid must be a DID");
+  return value;
+}
+
+function blueskyBlob(value) {
+  if (!value || typeof value !== "object" || value.$type !== "blob" || typeof value.mimeType !== "string" || !Number.isInteger(value.size) || value.size < 1 || typeof value.ref !== "object" || typeof value.ref.$link !== "string") {
+    throw new TypeError("Bluesky blob response is malformed");
+  }
+  return value;
+}
+
+export function blueskyPostRecord({ intent, createdAt, externalCard, externalThumb } = {}) {
+  if (!intent || intent.type !== "SocialPublicationIntent") throw new TypeError("Bluesky post requires a SocialPublicationIntent");
+  const record = {
+    $type: BLUESKY_POST_COLLECTION,
+    text: intent.text,
+    createdAt: isoInstant(createdAt, "createdAt"),
+    langs: [...intent.languages],
+  };
+  if (externalCard !== undefined) {
+    const uri = exactUrl(externalCard.uri ?? intent.canonicalUrl, "externalCard.uri");
+    const titleValue = text(externalCard.title ?? intent.title ?? new URL(uri).hostname, "externalCard.title", { maxBytes: MAX_CARD_TITLE_BYTES });
+    const descriptionValue = text(externalCard.description ?? intent.description ?? "", "externalCard.description", { required: false, maxBytes: MAX_CARD_DESCRIPTION_BYTES }) ?? "";
+    record.embed = {
+      $type: "app.bsky.embed.external",
+      external: {
+        uri,
+        title: titleValue,
+        description: descriptionValue,
+        ...(externalThumb === undefined ? {} : { thumb: blueskyBlob(externalThumb) }),
+      },
+    };
+  }
+  return Object.freeze(record);
+}
+
+export async function uploadBlueskyBlob({ authorizedFetch, service = "https://bsky.social", bytes, mediaType = "image/png" } = {}) {
+  const call = authorizedCapability(authorizedFetch, "Bluesky");
+  if (!(bytes instanceof Uint8Array) || bytes.byteLength < 1 || bytes.byteLength > 2_000_000) throw new TypeError("Bluesky blob must be 1..2,000,000 bytes");
+  if (!['image/png', 'image/jpeg', 'image/webp'].includes(mediaType)) throw new TypeError("Bluesky blob media type is not admitted");
+  const origin = serviceOrigin(service, "Bluesky service");
+  const init = { method: "POST", redirect: "error", headers: { "content-type": mediaType, accept: "application/json" }, body: bytes };
+  noAuthorization(init.headers);
+  const payload = await boundedJson(await call(`${origin}/xrpc/com.atproto.repo.uploadBlob`, init), "com.atproto.repo.uploadBlob");
+  return blueskyBlob(payload.blob);
+}
+
+export async function publishBlueskyPost({ authorizedFetch, service = "https://bsky.social", repoDid, record } = {}) {
+  const call = authorizedCapability(authorizedFetch, "Bluesky");
+  const origin = serviceOrigin(service, "Bluesky service");
+  const repo = did(repoDid);
+  if (!record || record.$type !== BLUESKY_POST_COLLECTION || typeof record.text !== "string" || !Number.isFinite(Date.parse(record.createdAt ?? ""))) throw new TypeError("record is not an admitted Bluesky feed post");
+  const init = {
+    method: "POST", redirect: "error", headers: { "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify({ repo, collection: BLUESKY_POST_COLLECTION, record }),
+  };
+  noAuthorization(init.headers);
+  const payload = await boundedJson(await call(`${origin}/xrpc/com.atproto.repo.createRecord`, init), "com.atproto.repo.createRecord");
+  if (typeof payload.uri !== "string" || !payload.uri.startsWith(`at://${repo}/${BLUESKY_POST_COLLECTION}/`) || typeof payload.cid !== "string" || payload.cid.length < 10) {
+    throw new TypeError("Bluesky createRecord returned no exact URI/CID receipt");
+  }
+  return Object.freeze({ uri: payload.uri, cid: payload.cid, response: payload });
+}
+
+export async function resolveBlueskyHandle({ fetch: request = globalThis.fetch, service = "https://bsky.social", handle } = {}) {
+  if (typeof request !== "function") throw new TypeError("resolveBlueskyHandle requires fetch");
+  if (typeof handle !== "string" || !/^[A-Za-z0-9](?:[A-Za-z0-9.-]{1,251}[A-Za-z0-9])?$/u.test(handle)) throw new TypeError("handle is malformed");
+  const origin = serviceOrigin(service, "Bluesky service");
+  const url = `${origin}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`;
+  const payload = await boundedJson(await request(url, { method: "GET", redirect: "error", headers: { accept: "application/json" } }), "com.atproto.identity.resolveHandle");
+  return Object.freeze({ handle, did: did(payload.did) });
+}
+
+function facebookVersion(value) {
+  if (typeof value !== "string" || !/^v\d{1,3}\.\d{1,3}$/u.test(value)) throw new TypeError("Facebook apiVersion must be explicit vMAJOR.MINOR text");
+  return value;
+}
+
+function facebookPageId(value) {
+  if (typeof value !== "string" || !/^\d{5,40}$/u.test(value)) throw new TypeError("Facebook pageId must be numeric text");
+  return value;
+}
+
+export async function observeFacebookPage({ authorizedFetch, graphOrigin = "https://graph.facebook.com", apiVersion, pageId } = {}) {
+  const call = authorizedCapability(authorizedFetch, "Facebook");
+  const origin = serviceOrigin(graphOrigin, "Facebook graphOrigin");
+  const version = facebookVersion(apiVersion);
+  const id = facebookPageId(pageId);
+  const init = { method: "GET", redirect: "error", headers: { accept: "application/json" } };
+  noAuthorization(init.headers);
+  const payload = await boundedJson(await call(`${origin}/${version}/${id}?fields=id%2Cname%2Clink`, init), "Facebook Page observation");
+  if (String(payload.id) !== id || typeof payload.name !== "string") throw new TypeError("Facebook Page observation did not return the exact page");
+  return Object.freeze({ id, name: payload.name, ...(typeof payload.link === "string" ? { link: exactUrl(payload.link, "Facebook Page link") } : {}) });
+}
+
+export async function publishFacebookPagePost({ authorizedFetch, graphOrigin = "https://graph.facebook.com", apiVersion, pageId, message, link } = {}) {
+  const call = authorizedCapability(authorizedFetch, "Facebook");
+  const origin = serviceOrigin(graphOrigin, "Facebook graphOrigin");
+  const version = facebookVersion(apiVersion);
+  const id = facebookPageId(pageId);
+  const body = new URLSearchParams();
+  body.set("message", text(message, "message"));
+  if (link !== undefined) body.set("link", exactUrl(link, "link"));
+  const init = { method: "POST", redirect: "error", headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" }, body: body.toString() };
+  noAuthorization(init.headers);
+  const payload = await boundedJson(await call(`${origin}/${version}/${id}/feed`, init), "Facebook Page feed publication");
+  if (typeof payload.id !== "string" || payload.id.length < 3 || payload.id.length > 256) throw new TypeError("Facebook Page publication returned no post id");
+  return Object.freeze({ id: payload.id, response: payload });
+}
