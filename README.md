@@ -17,6 +17,7 @@ This section is deliberately **credential-blind** and **editorially blind**:
 - public handle resolution through `com.atproto.identity.resolveHandle`;
 - bounded image blob upload through `com.atproto.repo.uploadBlob`;
 - `app.bsky.feed.post` record construction, including optional external cards;
+- current lexicon enforcement: 300 graphemes, 3000 bytes, and at most three languages;
 - exact repository publication through `com.atproto.repo.createRecord`.
 
 The service does not log in with a password or own an app password. Authentication belongs to the customer capability.
@@ -28,6 +29,17 @@ The service does not log in with a password or own an app password. Authenticati
 - explicit Graph API version supplied by the customer rather than frozen into Red Cup code.
 
 The service does not own or request Page tokens. The customer capability adds authorization.
+
+### LinkedIn
+
+- current `/rest/posts` organic publication shape;
+- organization or member author URNs;
+- explicit `Linkedin-Version` supplied by the customer;
+- required Rest.li protocol header;
+- exact post URN receipt from `x-restli-id`;
+- article projection from the customer's canonical publication intent.
+
+The service does not own LinkedIn access tokens or organization roles. Authorization remains a customer capability.
 
 ## Customer pattern
 

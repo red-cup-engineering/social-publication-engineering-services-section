@@ -2,12 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   blueskyPostRecord,
+  linkedinPostBody,
   niDigest,
   observeFacebookPage,
   publicationIntent,
   publicationReceipt,
   publishBlueskyPost,
   publishFacebookPagePost,
+  publishLinkedInPost,
   resolveBlueskyHandle,
   uploadBlueskyBlob,
 } from "../src/index.mjs";
@@ -69,4 +71,30 @@ test("Facebook Page observation and publication require explicit API version and
   assert.equal(post.id,"61573083309686_123456789");
   assert.equal(calls[1].init.headers.authorization, undefined);
   assert.match(calls[1].init.body,/koios\.news/u);
+});
+
+
+test("Bluesky post construction enforces current lexicon bounds", () => {
+  const tooLong = publicationIntent({ canonicalUrl: "https://koios.news/", text: "x".repeat(301) });
+  assert.throws(() => blueskyPostRecord({ intent: tooLong, createdAt: "2026-10-06T00:00:00Z" }), /app\.bsky\.feed\.post limit/u);
+  const tooManyLanguages = publicationIntent({ canonicalUrl: "https://koios.news/", text: "hello", languages: ["en", "fr", "de", "es"] });
+  assert.throws(() => blueskyPostRecord({ intent: tooManyLanguages, createdAt: "2026-10-06T00:00:00Z" }), /at most three languages/u);
+});
+
+test("LinkedIn post publication is versioned, credential-blind, and receipt checked", async () => {
+  const intent = publicationIntent({ canonicalUrl: "https://koios.news/posts/example", text: "A systems update.", title: "Example", description: "What changed and why it matters." });
+  const body = linkedinPostBody({ intent, author: "urn:li:organization:5515715" });
+  let seen;
+  const id = "urn:li:share:6844785523593134080";
+  const result = await publishLinkedInPost({
+    version: "202609", body,
+    authorizedFetch: async (url, init) => {
+      seen = { url, init };
+      return new Response("", { status: 201, headers: { "x-restli-id": id } });
+    },
+  });
+  assert.equal(seen.url, "https://api.linkedin.com/rest/posts");
+  assert.equal(seen.init.headers.authorization, undefined);
+  assert.equal(seen.init.headers["linkedin-version"], "202609");
+  assert.equal(result.id, id);
 });

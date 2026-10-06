@@ -94,7 +94,7 @@ async function boundedJson(response, operation) {
 }
 
 export function publicationReceipt({ provider, intent, externalId, externalUrl, observedAt, responseDigest } = {}) {
-  if (!['bluesky', 'facebook-page'].includes(provider)) throw new TypeError("publication receipt provider is not admitted");
+  if (!['bluesky', 'facebook-page', 'linkedin'].includes(provider)) throw new TypeError("publication receipt provider is not admitted");
   if (!intent || intent.type !== "SocialPublicationIntent" || typeof intent.id !== "string" || !intent.id.startsWith("ni:///sha-256;")) throw new TypeError("publication receipt requires an admitted intent");
   const id = text(externalId, "externalId", { maxBytes: 500 });
   const url = externalUrl === undefined ? undefined : exactUrl(externalUrl, "externalUrl");
@@ -117,6 +117,10 @@ function did(value) {
   return value;
 }
 
+function graphemeCount(value) {
+  return [...new Intl.Segmenter("en", { granularity: "grapheme" }).segment(value)].length;
+}
+
 function blueskyBlob(value) {
   if (!value || typeof value !== "object" || value.$type !== "blob" || typeof value.mimeType !== "string" || !Number.isInteger(value.size) || value.size < 1 || typeof value.ref !== "object" || typeof value.ref.$link !== "string") {
     throw new TypeError("Bluesky blob response is malformed");
@@ -126,6 +130,8 @@ function blueskyBlob(value) {
 
 export function blueskyPostRecord({ intent, createdAt, externalCard, externalThumb } = {}) {
   if (!intent || intent.type !== "SocialPublicationIntent") throw new TypeError("Bluesky post requires a SocialPublicationIntent");
+  if (Buffer.byteLength(intent.text) > 3000 || graphemeCount(intent.text) > 300) throw new TypeError("Bluesky post text exceeds the app.bsky.feed.post limit");
+  if (intent.languages.length > 3) throw new TypeError("Bluesky post admits at most three languages");
   const record = {
     $type: BLUESKY_POST_COLLECTION,
     text: intent.text,
@@ -221,4 +227,69 @@ export async function publishFacebookPagePost({ authorizedFetch, graphOrigin = "
   const payload = await boundedJson(await call(`${origin}/${version}/${id}/feed`, init), "Facebook Page feed publication");
   if (typeof payload.id !== "string" || payload.id.length < 3 || payload.id.length > 256) throw new TypeError("Facebook Page publication returned no post id");
   return Object.freeze({ id: payload.id, response: payload });
+}
+
+
+function linkedinVersion(value) {
+  if (typeof value !== "string" || !/^20\d{4}$/u.test(value)) throw new TypeError("LinkedIn version must be explicit YYYYMM text");
+  const month = Number(value.slice(4));
+  if (month < 1 || month > 12) throw new TypeError("LinkedIn version contains an invalid month");
+  return value;
+}
+
+function linkedinAuthor(value) {
+  if (typeof value !== "string" || !/^urn:li:(?:organization:\d+|person:[A-Za-z0-9_-]+)$/u.test(value)) throw new TypeError("LinkedIn author must be an organization or person URN");
+  return value;
+}
+
+function linkedinImageUrn(value) {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string" || !/^urn:li:image:[A-Za-z0-9_-]+$/u.test(value)) throw new TypeError("LinkedIn thumbnail must be an image URN");
+  return value;
+}
+
+export function linkedinPostBody({ intent, author, article = true, thumbnail } = {}) {
+  if (!intent || intent.type !== "SocialPublicationIntent") throw new TypeError("LinkedIn post requires a SocialPublicationIntent");
+  const body = {
+    author: linkedinAuthor(author),
+    commentary: intent.text,
+    visibility: "PUBLIC",
+    distribution: { feedDistribution: "MAIN_FEED", targetEntities: [], thirdPartyDistributionChannels: [] },
+    lifecycleState: "PUBLISHED",
+    isReshareDisabledByAuthor: false,
+  };
+  if (article) {
+    const titleValue = text(intent.title, "LinkedIn article title", { maxBytes: MAX_CARD_TITLE_BYTES });
+    const descriptionValue = text(intent.description, "LinkedIn article description", { maxBytes: MAX_CARD_DESCRIPTION_BYTES });
+    const thumb = linkedinImageUrn(thumbnail);
+    body.content = { article: { source: intent.canonicalUrl, title: titleValue, description: descriptionValue, ...(thumb === undefined ? {} : { thumbnail: thumb }) } };
+  }
+  return Object.freeze(body);
+}
+
+export async function publishLinkedInPost({ authorizedFetch, apiOrigin = "https://api.linkedin.com", version, body } = {}) {
+  const call = authorizedCapability(authorizedFetch, "LinkedIn");
+  const origin = serviceOrigin(apiOrigin, "LinkedIn apiOrigin");
+  const admittedVersion = linkedinVersion(version);
+  if (!body || typeof body !== "object" || !linkedinAuthor(body.author) || typeof body.commentary !== "string" || body.lifecycleState !== "PUBLISHED" || body.visibility !== "PUBLIC") {
+    throw new TypeError("LinkedIn body is not an admitted public post");
+  }
+  const init = {
+    method: "POST", redirect: "error",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json",
+      "x-restli-protocol-version": "2.0.0",
+      "linkedin-version": admittedVersion,
+    },
+    body: JSON.stringify(body),
+  };
+  noAuthorization(init.headers);
+  const response = await call(`${origin}/rest/posts`, init);
+  const raw = await response.text();
+  if (Buffer.byteLength(raw) > MAX_RESPONSE_BYTES) throw new TypeError("LinkedIn Posts response exceeds the bounded response limit");
+  if (response.status !== 201) throw new Error(`LinkedIn Posts ${response.status}: ${raw.slice(0, 400)}`);
+  const postUrn = response.headers.get("x-restli-id");
+  if (postUrn === null || !/^urn:li:(?:share|ugcPost):\d+$/u.test(postUrn)) throw new TypeError("LinkedIn Posts returned no exact post URN receipt");
+  return Object.freeze({ id: postUrn });
 }

@@ -1,17 +1,30 @@
 {
   "name": "@red-cup-engineering/social-publication-services-section",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Credential-blind, provider-neutral social publication mechanics with ni-addressed intents and receipts.",
-  "exports": { ".": "./src/index.mjs" },
-  "files": ["src"],
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "files": [
+    "src"
+  ],
   "scripts": {
     "check": "node --check src/index.mjs && node --check test/index.test.mjs",
     "test": "node --test test/index.test.mjs",
     "verify": "npm run check && npm test"
   },
-  "engines": { "node": ">=22.18" },
-  "keywords": ["social-publication", "atproto", "facebook", "ni", "credential-blind"],
+  "engines": {
+    "node": ">=22.18"
+  },
+  "keywords": [
+    "social-publication",
+    "atproto",
+    "facebook",
+    "ni",
+    "credential-blind",
+    "linkedin"
+  ],
   "license": "UNLICENSED"
 }
