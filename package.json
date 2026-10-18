@@ -26,5 +26,9 @@
     "credential-blind",
     "linkedin"
   ],
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/red-cup-engineering/social-publication-services-section.git"
+  }
 }
