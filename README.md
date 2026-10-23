@@ -53,3 +53,11 @@ The service does not own LinkedIn access tokens or organization roles. Authoriza
 A publication such as Koios.News should own its identity, editorial decision, canonical URL, copy, and assets. It sends an admitted `SocialPublicationIntent` to this service. A platform adapter performs only the authorized transport operation and returns external evidence that the customer can bind into a `SocialPublicationReceipt`.
 
 This keeps platform churn in Red Cup Engineering while publication policy stays with the consuming organization.
+
+## Source-qualified audience and patronage opportunities
+
+The added `src/audience-routes.mjs` is a **pure source-reader**, not a CRM, lead scraper or second posting engine. It reads the corporate Marketing owner's source-qualified public projects and openly documented outside grant/sponsor/community routes, checks topic relevance, observed-on freshness and deadlines, and returns exactly one of `review-for-application`, `verify-eligibility`, `investigate`, `recheck`, `unmatched` or `closed`.
+
+It does **not** infer wealth, person-level interest, grant eligibility, a right to message, a submitted application, or revenue. It cannot change rights or trigger transport. Any actual publish still requires the existing `SocialPublicationIntent` and authorized platform adapter; the existing Coesite marketing Work/consent and original corporate owner select what to commission.
+
+Call `node apps/audience-brief.mjs /path/to/corporate-source.json --markdown` to generate a source-linked review agenda; use `--json` for machine-readable routing. A typical input object has `asOf`, `work:[{id,publicUrl,topics}]`, and `routes:[{id,name,kind,status,checkedOn,sourceUrl,entryUrl,topics,note,nextAction,deadline?}]`. The tool reads files only; it never sends mail or contacts a prospect. Node native tests cover an eligible live route, conditional restriction, stale/closed/refusal, duplicate identities and unsafe source URLs. The first consuming 561 Group campaign source belongs with the original corporate Marketing office, not this generic provider.
