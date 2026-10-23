@@ -26,3 +26,32 @@ test("rejects malicious URLs, duplicate IDs, unverifiable proof and malformed st
  assert.throws(()=>qualifyPublicChannels({...input,asOf:"not-a-date"}),TypeError);
  assert.throws(()=>publicChannelBrief({}),TypeError);
 });
+
+test("funding opportunities do not become a single buyer/application funnel",()=>{
+ const choices=[
+  {...base,id:"grant",kind:"grant"},
+  {...base,id:"patron",kind:"patronage",name:"Open project patronage"},
+  {...base,id:"community",kind:"community",name:"Public technical discussion"},
+  {...base,id:"sponsor",kind:"sponsorship",name:"Corporate sponsorship"},
+  {...base,id:"host",kind:"fiscal-hosting",name:"Fiscal service"}
+ ];
+ const r=qualifyPublicChannels({work,routes:choices,asOf:"2026-10-23"});
+ assert.deepEqual(Object.fromEntries(r.rows.map(x=>[x.id,x.state])),{
+   community:"participate-if-allowed",grant:"review-for-application",host:"verify-hosting-fit",patron:"prepare-public-work-invitation",sponsor:"qualify-sponsorship-terms"
+ });
+ for(const row of r.rows){
+  assert.equal(row.qualifiedInterest,"not-observed");
+  assert.equal(row.externalReceiving,"not-observed");
+ }
+ assert.match(publicChannelBrief(r),/Outside interest: not-observed/u);
+});
+test("topic overlap cannot outrank actual mechanism rights or source freshness",()=>{
+ const broad={...base,id:"broad",kind:"patronage",topics:["formal-methods","open-science","open-commerce","software"]};
+ const precise={...base,id:"precise",kind:"community",topics:["formal-methods"]};
+ const closed={...base,id:"closed",kind:"patronage",topics:broad.topics,status:"closed"};
+ const stale={...base,id:"stale",kind:"patronage",topics:broad.topics,checkedOn:"2026-01-01"};
+ const readout=qualifyPublicChannels({work,routes:[broad,precise,closed,stale],asOf:"2026-10-23"});
+ assert.deepEqual(readout.rows.map(r=>r.id),["broad","precise","stale","closed"]);
+ assert.deepEqual(readout.rows.map(r=>r.state),["prepare-public-work-invitation","participate-if-allowed","recheck","closed"]);
+ assert.throws(()=>qualifyPublicChannels({work,routes:[{...base,checkedOn:"2026-02-31"}],asOf:"2026-10-23"}),/ISO date/);
+});
