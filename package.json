@@ -5,15 +5,19 @@
   "type": "module",
   "description": "Credential-blind, provider-neutral social publication mechanics with ni-addressed intents and receipts.",
   "exports": {
-    ".": "./src/index.mjs"
+    ".": "./src/index.mjs",
+    "./audience-routes": "./src/audience-routes.mjs",
+    "./campaign-intents": "./src/campaign-intents.mjs"
   },
   "files": [
     "src"
   ],
   "scripts": {
-    "check": "node --check src/index.mjs && node --check test/index.test.mjs",
-    "test": "node --test test/index.test.mjs",
-    "verify": "npm run check && npm test"
+    "check": "node --check src/index.mjs && node --check test/index.test.mjs && node --check src/audience-routes.mjs && node --check apps/audience-brief.mjs && node --check test/audience-routes.test.mjs && node --check src/campaign-intents.mjs && node --check apps/compile-campaign-intents.mjs && node --check test/campaign-intents.test.mjs",
+    "test": "node --test test/*.test.mjs",
+    "verify": "npm run check && npm test",
+    "audience:brief": "node apps/audience-brief.mjs",
+    "campaign:intents": "node apps/compile-campaign-intents.mjs"
   },
   "engines": {
     "node": ">=22.18"
