@@ -1,5 +1,5 @@
 {
-  "name": "@red-cup-engineering/social-publication-services-section",
+  "name": "@red-cup-engineering/social-publication-engineering-services-section",
   "version": "0.2.0",
   "private": true,
   "type": "module",
@@ -33,7 +33,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/red-cup-engineering/social-publication-services-section.git"
+    "url": "git+https://github.com/red-cup-engineering/social-publication-engineering-services-section.git"
   },
   "funding": {
     "type": "individual",
