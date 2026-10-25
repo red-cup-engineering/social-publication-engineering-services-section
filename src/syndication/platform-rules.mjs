@@ -5,7 +5,7 @@
  * A rule never says what to write, it says what the platform admits and how often.
  *
  * Interface (see content/platform-rules.seed.json for a complete example):
- *   { type: 'PlatformRuleSet', version, status: 'seed-unverified' | 'verified', rules: { [platform]: PlatformRule } }
+ *   { type: 'PlatformRuleSet', version, status: 'seed-unverified' | 'partially-verified' | 'verified', rules: { [platform]: PlatformRule } }
  *   PlatformRule = {
  *     platform, checkedOn: ISO date | null,
  *     text: { maxGraphemes, titleMaxGraphemes? }, hashtags: { max },
@@ -45,7 +45,7 @@ export function admitPlatformRule(rule, key) {
 
 export function admitPlatformRuleSet(document) {
   if (document?.type !== 'PlatformRuleSet' || typeof document.rules !== 'object') throw new TypeError('not a PlatformRuleSet');
-  if (!['seed-unverified', 'verified'].includes(document.status)) throw new TypeError('PlatformRuleSet.status: seed-unverified | verified');
+  if (!['seed-unverified', 'partially-verified', 'verified'].includes(document.status)) throw new TypeError('PlatformRuleSet.status: seed-unverified | partially-verified | verified');
   const rules = Object.fromEntries(Object.entries(document.rules).map(([key, rule]) => [key, admitPlatformRule(rule, key)]));
   return Object.freeze({ version: document.version, status: document.status, rules: Object.freeze(rules) });
 }

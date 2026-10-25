@@ -14,3 +14,7 @@ export * from './publish.mjs';
 export * from './measure.mjs';
 export { blueskyAdapter, manualPacket } from './adapters.mjs';
 export { itemsFromFeed, itemsFromYouTubeInventory } from './sources.mjs';
+export * from './editorial.mjs';
+export * from './post-provenance.mjs';
+export * from './handles.mjs';
+export * from './rules-evidence.mjs';

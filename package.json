@@ -10,7 +10,10 @@
     "./campaign-intents": "./src/campaign-intents.mjs",
     "./syndication": "./src/syndication/index.mjs",
     "./syndicate": "./apps/syndicate.mjs",
-    "./platform-rules.seed": "./content/platform-rules.seed.json"
+    "./platform-rules.seed": "./content/platform-rules.seed.json",
+    "./platform-rules.verified": "./content/platform-rules.verified.json",
+    "./editorial-phrases": "./content/editorial/phrases.json",
+    "./brand-presence": "./apps/brand-presence.mjs"
   },
   "files": [
     "src",
@@ -18,12 +21,13 @@
     "content"
   ],
   "scripts": {
-    "check": "node --check src/index.mjs && node --check test/index.test.mjs && node --check src/audience-routes.mjs && node --check apps/audience-brief.mjs && node --check test/audience-routes.test.mjs && node --check src/campaign-intents.mjs && node --check apps/compile-campaign-intents.mjs && node --check test/campaign-intents.test.mjs && node --check src/syndication/index.mjs && node --check apps/syndicate.mjs && node --check test/syndication.test.mjs && node --check src/syndication/sources.mjs && node --check test/syndication-sources.test.mjs && node --check test/syndication-copy.test.mjs",
+    "check": "node --check src/index.mjs && node --check test/index.test.mjs && node --check src/audience-routes.mjs && node --check apps/audience-brief.mjs && node --check test/audience-routes.test.mjs && node --check src/campaign-intents.mjs && node --check apps/compile-campaign-intents.mjs && node --check test/campaign-intents.test.mjs && node --check src/syndication/index.mjs && node --check apps/syndicate.mjs && node --check test/syndication.test.mjs && node --check src/syndication/sources.mjs && node --check test/syndication-sources.test.mjs && node --check test/syndication-copy.test.mjs && node --check src/syndication/editorial.mjs && node --check src/syndication/post-provenance.mjs && node --check src/syndication/handles.mjs && node --check src/syndication/rules-evidence.mjs && node --check apps/brand-presence.mjs && node --check test/brand-presence.test.mjs",
     "syndicate": "node apps/syndicate.mjs",
     "test": "node --test test/*.test.mjs",
     "verify": "npm run check && npm test",
     "audience:brief": "node apps/audience-brief.mjs",
-    "campaign:intents": "node apps/compile-campaign-intents.mjs"
+    "campaign:intents": "node apps/compile-campaign-intents.mjs",
+    "brand-presence": "node apps/brand-presence.mjs"
   },
   "engines": {
     "node": ">=22.18"
