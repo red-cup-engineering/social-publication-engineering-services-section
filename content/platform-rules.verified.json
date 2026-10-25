@@ -205,8 +205,8 @@
         }
       },
       "automation": {
-        "mode": "api-allowed-bot-disclosed",
-        "note": "Automated accounts must use the official API only, enable the \"Automated\" profile label, and say in the bio that the account is a bot and who operates it. API is pay-per-use: a post with a URL costs $0.20, so every linked post is billed at that rate. AI-generated replies need X approval; this account does not reply."
+        "mode": "manual-only",
+        "note": "X offers pay-per-use API access only: credits are bought upfront and a post that carries a URL costs $0.20 (every linkBack-required post). The Leader's zero-cash requirement (group-work-continues-on-zero-cash-compute) bars it, so the engine writes packets and no account is planned. If X adds a free tier, change the mode to api-allowed-bot-disclosed: automated accounts must use the official API only, enable the Automated label and say in the bio that the account is a bot and who operates it. AI-generated replies need X approval."
       },
       "aiDisclosure": {
         "required": true,
@@ -255,7 +255,7 @@
           "cadence": "own-policy",
           "hashtags.max": "own-policy"
         },
-        "notes": "help.x.com pages (automation rules, platform manipulation) returned 403 to both fetch routes; those rules rest on docs.x.com and the Terms (effective 2026-10-09) read in full. 280-grapheme length is unverified."
+        "notes": "help.x.com pages (automation rules, platform manipulation) returned 403 to both fetch routes; those rules rest on docs.x.com and the Terms (effective 2026-10-09) read in full. 280-grapheme length is unverified. Mode is manual-only because of cost, not because the platform bars automation."
       }
     },
     "linkedin": {
