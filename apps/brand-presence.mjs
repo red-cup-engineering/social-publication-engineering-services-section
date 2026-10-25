@@ -4,6 +4,7 @@
  * accounts. It posts nothing, signs up for nothing and holds no credential.
  *
  *   gate        run the editorial gate over a PostCandidateSet (exit 3 on any refusal)
+ *   copy        run the editorial gate over profile copy (a bio, banner line, pinned text, About text) that is not a post
  *   finalize    append each rendition's provenance line (idempotent) and write the file back
  *   links       check every URL a PostCandidateSet uses and record the answers
  *   provenance  build (and, with --key, sign) a provenance record per rendition
@@ -114,6 +115,20 @@ async function main() {
       process.exit(refused === 0 ? 0 : 3);
       break;
     }
+    case 'copy': {
+      const doc = readJson(positional[0] ?? fail('usage: copy <CopyCandidate.json> [--profiles dir] [--links links.json]'));
+      if (doc.type !== 'CopyCandidate') fail('not a CopyCandidate: { type, brand, platform, field, maxGraphemes, text, claims?, sources?, ai? }');
+      const { merged } = loadRuleSet(flags);
+      const phrases = loadPhrases(flags);
+      const profiles = loadProfiles(flags.profiles);
+      const linkStatus = flags.links ? readJson(flags.links) : {};
+      const item = { claims: doc.claims ?? [], sources: doc.sources ?? [], ai: doc.ai ?? { textGenerated: true } };
+      const rendition = { platform: doc.platform, brand: doc.brand, text: doc.text, title: doc.title ?? null, media: [] };
+      const report = editorialReport(rendition, { profile: profileFor(profiles, doc.brand), item, phrases, ruleSet: merged, linkStatus, requireLinkStatus: Boolean(flags['require-links']), kind: 'profile', maxGraphemes: doc.maxGraphemes });
+      process.stdout.write(`${JSON.stringify({ copy: `${doc.brand}/${doc.platform}/${doc.field}`, pass: report.pass, report }, null, 2)}\n`);
+      process.exit(report.pass ? 0 : 3);
+      break;
+    }
     case 'finalize': {
       const path = positional[0] ?? fail('usage: finalize <PostCandidateSet.json>');
       const set = readJson(path);
@@ -211,7 +226,7 @@ async function main() {
       break;
     }
     default:
-      fail('commands: gate | finalize | links | provenance | verify | handle | rules | drift | keygen');
+      fail('commands: gate | copy | finalize | links | provenance | verify | handle | rules | drift | keygen');
   }
 }
 if (import.meta.url === `file://${process.argv[1]}`) main().catch((error) => fail(String(error.stack ?? error), 2));

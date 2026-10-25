@@ -16,7 +16,7 @@
  * advice. Quoted text, code spans and URLs are masked before prose checks (the PTGAE rule that
  * quotations are not house prose).
  */
-import { graphemeCount, looksSecret, niOfJson } from './canonical.mjs';
+import { graphemeCount, looksSecret, niOfBytes, niOfJson } from './canonical.mjs';
 
 export const GATE_VERSION = 'editorial-gate/1';
 
@@ -170,8 +170,10 @@ const checkLink = (url, { profile, linkStatus, requireLinkStatus, provenanceMode
  * @param {object} [context.linkStatus]   { [url]: { status, checkedAt } } from a recorded link check
  * @param {boolean} [context.requireLinkStatus]  live posting: an unchecked link refuses
  * @param {'design'|'live'} [context.provenanceMode]  'design' until the verification page answers
+ * @param {'post'|'profile'} [context.kind]  'profile' checks copy that is not a post (a bio, a banner line, a pinned text, an About page): the field's own
+ *   `maxGraphemes` replaces the post limit, no provenance footer is required (the decision record carries the copy's provenance), and the ownership line is required
  */
-export function editorialReport(rendition, { profile: given, item, phrases, ruleSet, linkStatus = {}, requireLinkStatus = false, provenanceMode = 'live' }) {
+export function editorialReport(rendition, { profile: given, item, phrases, ruleSet, linkStatus = {}, requireLinkStatus = false, provenanceMode = 'live', kind = 'post', maxGraphemes }) {
   const profile = merge(DEFAULT_PROFILE, given ?? {});
   const checks = [];
   const add = (id, level, message, extra = {}) => checks.push({ id, level, message, ...extra });
@@ -181,7 +183,7 @@ export function editorialReport(rendition, { profile: given, item, phrases, rule
 
   // length: the platform's limit, tightened by the brand's own
   const rule = ruleSet?.rules?.[rendition.platform];
-  const limit = Math.min(rule?.text?.maxGraphemes ?? Infinity, profile.platformMax?.[rendition.platform] ?? Infinity);
+  const limit = kind === 'profile' ? (maxGraphemes ?? Infinity) : Math.min(rule?.text?.maxGraphemes ?? Infinity, profile.platformMax?.[rendition.platform] ?? Infinity);
   const length = graphemeCount(text);
   if (Number.isFinite(limit) && length > limit) add('length', 'refuse', `${length} graphemes exceeds ${limit} for ${rendition.platform}`);
   if (rule?.text?.titleMaxGraphemes && title && graphemeCount(title) > rule.text.titleMaxGraphemes) add('length', 'refuse', `title exceeds ${rule.text.titleMaxGraphemes} graphemes`);
@@ -226,7 +228,7 @@ export function editorialReport(rendition, { profile: given, item, phrases, rule
   const urls = urlsIn(text);
   const sourceUrls = (item?.claims ?? []).map((claim) => claim.sourceUrl).filter(Boolean);
   for (const url of new Set([...urls, ...sourceUrls])) checks.push(...checkLink(url, { profile, linkStatus, requireLinkStatus, provenanceMode }));
-  if (rule?.linkBack === 'required' && rendition.link && !text.includes(rendition.link)) add('links', 'refuse', 'missing link back to the canonical page');
+  if (kind === 'post' && rule?.linkBack === 'required' && rendition.link && !text.includes(rendition.link)) add('links', 'refuse', 'missing link back to the canonical page');
 
   // claims: every checkable sentence is covered by a declared, sourced claim
   const claims = item?.claims ?? [];
@@ -260,11 +262,14 @@ export function editorialReport(rendition, { profile: given, item, phrases, rule
   if ((aiText || rendition.media?.some((m) => m.aiGenerated)) && !new RegExp(profile.aiTextDisclosure.pattern, 'iu').test(text) && !(rendition.disclosure?.applied && rendition.disclosure?.line && text.includes(rendition.disclosure.line))) {
     add('disclosure-ai', 'refuse', `AI-made text or media needs a plain disclosure such as "${profile.aiTextDisclosure.line}"`);
   }
-  if (!PROVENANCE_RE.test(text)) add('disclosure-provenance', 'refuse', 'no link to the public provenance record (https://561.group/v/<id>)');
+  if (kind === 'post' && !PROVENANCE_RE.test(text)) add('disclosure-provenance', 'refuse', 'no link to the public provenance record (https://561.group/v/<id>)');
+  if (kind === 'profile' && !new RegExp(profile.ownershipLinePattern ?? 'operated by Morgan Sennhauser', 'iu').test(text)) add('disclosure-ownership', 'refuse', 'the profile must say who operates the brand ("Operated by Morgan Sennhauser")');
 
   const refusals = checks.filter((c) => c.level === 'refuse');
   return {
     gate: GATE_VERSION,
+    kind,
+    textNi: niOfBytes(Buffer.from(text, 'utf8')),
     phrasesDigest: phrases.digest,
     profileDigest: niOfJson(profile),
     pass: refusals.length === 0,

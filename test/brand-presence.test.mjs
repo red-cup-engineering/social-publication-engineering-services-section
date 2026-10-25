@@ -207,3 +207,14 @@ test('regressions found by the exemplar writers: numbers end sentences, lone acr
   for (const claim of ['The Group has paying customers and growing revenue.', 'Koios.News has 4,000 subscribers.', 'We serve many clients.']) assert.ok(ids(report(withFooter(`${claim} Drafted by an AI agent. ${CANON}`))).includes('banned-phrase'), claim);
   assert.ok(!ids(report(withFooter(`The Group has no customers and no revenue. Drafted by an AI agent. ${CANON}`))).includes('banned-phrase'));
 });
+
+test('profile copy: no provenance footer, the field limit applies, the ownership line is required', () => {
+  const profile = (text, extra = {}) => editorialReport({ platform: 'bluesky', brand: 'red-cup-engineering', text, media: [] }, { item: { claims: [], sources: [], ai: { textGenerated: true } }, phrases, ruleSet, kind: 'profile', maxGraphemes: 256, ...extra });
+  const ok = profile('Software components with their build inputs, tests and demos. A 561 Group company. Operated by Morgan Sennhauser. Posts are drafted by AI agents.');
+  assert.deepEqual(ok.checks.filter((c) => c.level === 'refuse'), []);
+  assert.ok(ids(profile('Software components. A 561 Group company. Posts are drafted by AI agents.')).includes('disclosure-ownership'));
+  assert.ok(ids(profile('Software components. Operated by Morgan Sennhauser.')).includes('disclosure-ai'));
+  assert.ok(ids(profile('Operated by Morgan Sennhauser. Posts are drafted by AI agents. A revolutionary toolkit.')).includes('banned-phrase'));
+  assert.ok(ids(profile(`${'Plain words here. '.repeat(20)}Operated by Morgan Sennhauser. Posts are drafted by AI agents.`)).includes('length'));
+  assert.equal(ok.kind, 'profile');
+});

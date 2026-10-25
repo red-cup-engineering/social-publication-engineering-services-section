@@ -89,92 +89,6 @@
         "notes": "Platform write limit is 5,000 points/hour and 35,000/day (a create costs 3); our caps are far lower by choice. Post length 300 graphemes is enforced by the engine adapter; the platform page for it could not be fetched. The platform has no AI-content rule; the label is house policy."
       }
     },
-    "mastodon": {
-      "platform": "mastodon",
-      "checkedOn": "2026-10-24",
-      "text": {
-        "maxGraphemes": 500
-      },
-      "hashtags": {
-        "max": 4
-      },
-      "media": {
-        "image": {
-          "aspects": [
-            "1:1",
-            "4:5",
-            "16:9"
-          ],
-          "maxBytes": 8388608,
-          "maxPerPost": 4,
-          "altTextRequired": true
-        },
-        "video": {
-          "aspects": [
-            "9:16",
-            "1:1",
-            "16:9"
-          ],
-          "maxSeconds": 300,
-          "maxBytes": 41943040
-        }
-      },
-      "automation": {
-        "mode": "api-allowed-bot-disclosed",
-        "note": "Set the \"Automated account\" flag. Rules differ per server; mastodon.social rule 1008 requires disclosing generative-AI use and bars accounts that only post AI-generated content, so pick a server whose rules were read."
-      },
-      "aiDisclosure": {
-        "required": true,
-        "offered": false,
-        "mechanism": "text-label",
-        "apiField": null,
-        "textLabel": "AI-generated media"
-      },
-      "limits": {
-        "perAccount": {
-          "perHour": 1,
-          "perDay": 4,
-          "minGapMinutes": 180
-        }
-      },
-      "windows": [
-        {
-          "days": [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6
-          ],
-          "startHour": 8,
-          "endHour": 21
-        }
-      ],
-      "duplicates": {
-        "blockSameTextWithinDays": 30
-      },
-      "linkBack": "required",
-      "cadence": {
-        "targetPerDay": 2
-      },
-      "x-evidence": {
-        "record": "platform-terms-mastodon",
-        "observedOn": "2026-10-24",
-        "fields": {
-          "text.maxGraphemes": "verified",
-          "automation.mode": "verified",
-          "aiDisclosure": "verified",
-          "limits.perAccount": "own-policy",
-          "windows": "own-policy",
-          "duplicates": "own-policy",
-          "cadence": "own-policy",
-          "hashtags.max": "own-policy"
-        },
-        "notes": "Verified for mastodon.social only. Default API limit 300 calls per 5 minutes per account; media upload 30 per 30 minutes."
-      }
-    },
     "x": {
       "platform": "x",
       "checkedOn": "2026-10-24",
@@ -206,7 +120,7 @@
       },
       "automation": {
         "mode": "manual-only",
-        "note": "X offers pay-per-use API access only: credits are bought upfront and a post that carries a URL costs $0.20 (every linkBack-required post). The Leader's zero-cash requirement (group-work-continues-on-zero-cash-compute) bars it, so the engine writes packets and no account is planned. If X adds a free tier, change the mode to api-allowed-bot-disclosed: automated accounts must use the official API only, enable the Automated label and say in the bio that the account is a bot and who operates it. AI-generated replies need X approval."
+        "note": "Manual-only. X's API is pay-per-use with no free tier (docs.x.com pricing, read 2026-10-24): Post: Create costs $0.015 per request and Post: Create (with URL) $0.200, so even a link-free API post costs cash and the Group spends none (requirement group-work-continues-on-zero-cash-compute). Posting by hand in the web app costs nothing, so X runs as link-free native posts written by the engine as packets and posted by a person, with the brand site in the profile's website field. A post needs no canonical link to participate; the gate still requires the provenance line, which is the post's only URL. If X adds a free tier, change the mode to api-allowed-bot-disclosed: automated accounts must use the official API only, enable the Automated label and say in the bio that the account is a bot and who operates it. AI-generated replies need X approval; this account does not reply."
       },
       "aiDisclosure": {
         "required": true,
@@ -238,7 +152,7 @@
       "duplicates": {
         "blockSameTextWithinDays": 30
       },
-      "linkBack": "required",
+      "linkBack": "optional",
       "cadence": {
         "targetPerDay": 1
       },
@@ -255,7 +169,8 @@
           "cadence": "own-policy",
           "hashtags.max": "own-policy"
         },
-        "notes": "help.x.com pages (automation rules, platform manipulation) returned 403 to both fetch routes; those rules rest on docs.x.com and the Terms (effective 2026-10-09) read in full. 280-grapheme length is unverified. Mode is manual-only because of cost, not because the platform bars automation."
+        "notes": "Mode is manual-only because of cost, not because the platform bars automation. Reach of link posts versus link-free posts: X's product head and owner said in July 2026 that no link penalty has applied for over a year (reported by PPC Land and Free Press Journal, secondary sources, not read on X itself); the open-sourced ranking code shows no explicit URL rule (the same secondary report); marketing blogs claiming a 50 to 90 percent penalty are unsourced. Treated as unverified: the plan does not depend on links either way.",
+        "supplementary": "platform-terms-x-link-and-cost-2026-10-25"
       }
     },
     "linkedin": {
