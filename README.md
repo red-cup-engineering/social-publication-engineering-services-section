@@ -68,3 +68,27 @@ Call `node apps/audience-brief.mjs /path/to/corporate-source.json --markdown` to
 
 `node apps/compile-campaign-intents.mjs SOURCE.json --json` produces typed candidates, or `--markdown` a reviewer-friendly pack. Publishing still belongs to the customer account through `publishBlueskyPost`, `publishFacebookPagePost`, `publishLinkedInPost`, or a separately installed native Fediverse publisher, and requires its actual editorial and transport permission. The Group corporate Marketing consumer remains downstream. Tests exercise provenance, duplicate, invalid and overlong content refusals, and deterministic native intent construction.
 
+
+## Syndication engine (`@.../social-publication-services-section/syndication`)
+
+One pipeline for many brands on many platforms: a ContentItem becomes per-account Renditions, a gated per-account schedule, a publish cycle (dry run unless live and owner-approved), and measurement that feeds allocation. Pure and deterministic except the publish step; the section stays credential-blind and editorially blind: accounts hold credential *references*, copy comes from a voice hook.
+
+```
+ContentItem --renditionsFor--> Rendition --gateRendition--> planSchedule --> runDue --> journal --> summarize --> multipliers
+   (feeds, YouTube                 ^            ^                  per-account queues, limits         |
+    inventories, Notebook)         |            |                                                    v
+                         PlatformRuleSet   voiceCheck + manifests                    Notebook allocator, next schedule
+```
+
+Interfaces other owners maintain (all JSON; examples in `content/` and `test/`):
+
+- **AccountRegistry** `{type, version, accounts:[{id, brand, platform, handle, kind, automation:{botDisclosed}, credentialRef:{scheme,name}, timezone, state: planned|active|held|suspended, hold?, approval:{firstPostApprovedAt, approvedBy}, cadence?:{targetPerDay}, limits?, sections}]}`. A credential value or secret-bearing field anywhere in it is refused.
+- **PlatformRuleSet** `{type, version, status: seed-unverified|verified, rules:{[platform]: {text, hashtags, media, automation:{mode}, aiDisclosure:{required, offered, mechanism, apiField, textLabel}, limits, windows, duplicates, linkBack, cadence?}}}`. `content/platform-rules.seed.json` is a conservative seed, not verified terms. No rule, no post.
+- **ContentItem** `{id: ni, brand, section, kind, title, summary, canonicalUrl, source:{ni}, priority, tags, media:[{ni, mediaType, aiGenerated, alt, ...}], linkedWorkAiGenerated?}`. Adapters: `itemsFromFeed`, `itemsFromYouTubeInventory`.
+- **Voice check** `(rendition) => {pass, notes}` and **copy hook** `(item, platform, defaults) => string | {text, title}`; defaults are a plain template (`copyOrigin: template`) and a small lint.
+- **ProvenanceManifest** (`provenance.mjs`): `561-provenance/1`, C2PA-shaped ingredient and action assertions, the AI-content disclosure, a verification URL, an Ed25519 signature slot. `signManifest` and `verifyManifest` are the reference implementations.
+- **MetricReading** `{accountId, platform, section, kind, renditionId?, externalId?, at, views?, likes?, replies?, shares?, clicks?, followersDelta?}`.
+
+Compositor (`compositor.mjs`): crop, scale, pad, cover Google's visible logo where declared, place our lockup, caption, transcode -- as data, renderable to SVG or ffmpeg arguments. It refuses to strip, alter or defeat SynthID, C2PA or metadata, and refuses any step off its allow-list. The unmodified original is archived by content address and named as the derivative's ingredient.
+
+Operator CLI: `node apps/syndicate.mjs plan|due|feedback|verify` (see the file header). `due` never posts without `--live`, an adapter that declares itself live, and the account's recorded first-post approval.
