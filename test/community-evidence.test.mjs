@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { address, admitCell, cellSetAddress } from "@red-cup-engineering/signcraft/cell";
+import { address, admitCell, cellSetAddress, semanticId } from "@red-cup-engineering/signcraft/cell";
 import { communityEvidence, assessCommunityRequirements, defaultForgeCommunityRequirements, compareCommunityAssessments } from "../src/community-evidence.mjs";
 
 const subject = "urn:github:repository:123";
@@ -143,6 +143,25 @@ test("changing a received assessment without changing its canonical content refu
   const result = read([]);
   const forged = structuredClone(result); forged.requirements[0].reading = "held";
   assert.throws(() => compareCommunityAssessments(result, forged), /canonical identity/u);
+});
+
+test("a freshly addressed forged interpretation cannot claim observed improvement", () => {
+  const original = read([observation("repository.description", "")]);
+  for (const change of [
+    value => { value.requirements[0].reading = "held"; },
+    value => { value.evidence.id = semanticId({ unrelated: "source" }); },
+    value => { value.cells = []; },
+    value => { value.recommendations[0].kind = "monitor"; },
+    value => { value.activities = [{ kind: "fabricated-activity" }]; },
+  ]) {
+    const forged = structuredClone(original);
+    change(forged);
+    const { id, ...body } = forged;
+    forged.id = semanticId(body);
+    assert.throws(() => compareCommunityAssessments(original, forged), /does not replay/u);
+    assert.throws(() => assessCommunityRequirements({ batch: original.evidence.batch,
+      requirements: [requirement()], previous: forged }), /does not replay/u);
+  }
 });
 
 test("cached source timestamps retain observation age without permitting time reversal", () => {

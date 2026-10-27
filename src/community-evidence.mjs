@@ -234,6 +234,14 @@ function admittedAssessment(value) {
     throw new TypeError("original community assessment required");
   const { id, ...body } = value;
   if (id !== assessmentIdentity(body)) throw new TypeError("community assessment differs from its canonical identity");
+  // An address establishes content identity, not the correctness of a declared
+  // interpretation. Recompute every semantic result from its original inputs;
+  // only the previous-run change report is outside this single-snapshot replay.
+  const replay = assessCommunityRequirements({ batch: value.evidence.batch,
+    requirements: value.requirements.map(row => row.requirement) });
+  const { id: replayId, changes: replayChanges, ...replayed } = replay;
+  const { changes, ...declared } = body;
+  if (!coincides(replayed, declared)) throw new TypeError("community assessment does not replay from its original source observations");
   return value;
 }
 
