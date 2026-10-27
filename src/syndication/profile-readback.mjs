@@ -133,7 +133,9 @@ export async function readBlueskyProfileDecision(record, {
     publicDescription:description,
     identityQualification:'source-pinned-DID-and-exact-handle',
     ...(profile.indexedAt && typeof profile.indexedAt === 'string' &&
-      /^\d{4}-\d{2}-\d{2}T/u.test(profile.indexedAt) ?
+      profile.indexedAt.length <= 40 &&
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/u.test(profile.indexedAt) &&
+      Number.isFinite(Date.parse(profile.indexedAt)) ?
       {profileIndexedAt:profile.indexedAt} : {}),
   });
 }
