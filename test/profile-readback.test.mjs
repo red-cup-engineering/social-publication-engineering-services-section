@@ -175,3 +175,16 @@ test('public observation projects no provider-private metadata, followers or ava
   assert.equal(JSON.stringify(out).includes('no-leak'),false);
   assert.equal(JSON.stringify(out).includes('avatar'),false);
 });
+
+
+test('unbounded or malformed provider indexedAt never becomes a trustworthy timestamp',async()=>{
+  for(const indexedAt of ['2026-10-27T18:00:00Z<script>unsafe</script>',
+    '2026-99-01T18:00:00Z','2026-10-27T18:00:00Z'.repeat(20)]){
+    const out=await readBlueskyProfileDecision(decision(),{
+      fetchImpl:serve(profile(desired,{indexedAt})),observedAt:at,
+    });
+    assert.equal(out.standing,'text-match');
+    assert.equal(Object.hasOwn(out,'profileIndexedAt'),false);
+    assert.equal(JSON.stringify(out).includes('<script>'),false);
+  }
+});
