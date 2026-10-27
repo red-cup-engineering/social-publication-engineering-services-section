@@ -100,3 +100,40 @@ existing publication tests. Source availability and these checks do not assert
 registry publication, an installed consumer, an external publication or a
 community outcome; those require their own observed receipts.
 
+## Syndication engine (`@.../social-publication-services-section/syndication`)
+
+One pipeline for many brands on many platforms: a ContentItem becomes per-account Renditions, a gated per-account schedule, a publish cycle (dry run unless live and owner-approved), and measurement that feeds allocation. Pure and deterministic except the publish step; the section stays credential-blind and editorially blind: accounts hold credential *references*, copy comes from a voice hook.
+
+```
+ContentItem --renditionsFor--> Rendition --gateRendition--> planSchedule --> runDue --> journal --> summarize --> multipliers
+   (feeds, YouTube                 ^            ^                  per-account queues, limits         |
+    inventories, Notebook)         |            |                                                    v
+                         PlatformRuleSet   voiceCheck + manifests                    Notebook allocator, next schedule
+```
+
+Interfaces other owners maintain (all JSON; examples in `content/` and `test/`):
+
+- **AccountRegistry** `{type, version, accounts:[{id, brand, platform, handle, kind, automation:{botDisclosed}, credentialRef:{scheme,name}, timezone, state: planned|active|held|suspended, hold?, approval:{firstPostApprovedAt, approvedBy}, cadence?:{targetPerDay}, limits?, sections}]}`. A credential value or secret-bearing field anywhere in it is refused.
+- **PlatformRuleSet** `{type, version, status: seed-unverified|verified, rules:{[platform]: {text, hashtags, media, automation:{mode}, aiDisclosure:{required, offered, mechanism, apiField, textLabel}, limits, windows, duplicates, linkBack, cadence?}}}`. `content/platform-rules.seed.json` is a conservative seed, not verified terms. No rule, no post.
+- **ContentItem** `{id: ni, brand, section, kind, title, summary, canonicalUrl, source:{ni}, priority, tags, media:[{ni, mediaType, aiGenerated, alt, ...}], linkedWorkAiGenerated?}`. Adapters: `itemsFromFeed`, `itemsFromYouTubeInventory`.
+- **Voice check** `(rendition) => {pass, notes}` and **copy hook** `(item, platform, defaults) => string | {text, title}`; defaults are a plain template (`copyOrigin: template`) and a small lint.
+- **ProvenanceManifest** (`provenance.mjs`): `561-provenance/1`, C2PA-shaped ingredient and action assertions, the AI-content disclosure, a verification URL, an Ed25519 signature slot. `signManifest` and `verifyManifest` are the reference implementations.
+- **MetricReading** `{accountId, platform, section, kind, renditionId?, externalId?, at, views?, likes?, replies?, shares?, clicks?, followersDelta?}`.
+
+Compositor (`compositor.mjs`): crop, scale, pad, cover Google's visible logo where declared, place our lockup, caption, transcode -- as data, renderable to SVG or ffmpeg arguments. It refuses to strip, alter or defeat SynthID, C2PA or metadata, and refuses any step off its allow-list. The unmodified original is archived by content address and named as the derivative's ingredient.
+
+Operator CLI: `node apps/syndicate.mjs plan|due|feedback|verify` (see the file header). `due` never posts without `--live`, an adapter that declares itself live, and the account's recorded first-post approval.
+
+## Brand-presence inputs (`feat/brand-presence-inputs-20261024`)
+
+The brand/account thread's inputs to the syndication engine, in the interfaces above. None of this posts, signs up or holds a credential.
+
+- **Verified platform rules** (`content/platform-rules.verified.json`, a `PlatformRuleSet` with `status: partially-verified`). Twelve platforms re-read from primary pages on 2026-10-24. Each rule names its dated terms record (`x-evidence.record`, in 561-group-services-section `data/records/platform-terms-records/`) and marks each field verified, partial, unverified, not-stated or own-policy. `mergeRuleSets(seed, verified)` keeps the seed for platforms not yet re-read (Facebook Page, Discord, newsletter, website, Hive). `admitPlatformRuleSet` accepts the new status. Changes from the seed: Hacker News is `prohibited` (automation and generated text are both barred); LinkedIn, Threads, Instagram and Substack are `manual-only` until an API application or review is approved or a posting API exists; X is `manual-only` because its API is pay-per-use ($0.20 for every post that carries a URL) and the Group requires zero cash spend (the Automated label is mandatory if that ever changes); DEV's AI disclosure is the `#ABotWroteThis` tag and AI-assisted articles may not promote a business.
+- **Rule evidence** (`src/syndication/rules-evidence.mjs`). `checkEvidence` refuses a rule whose record is missing, dated differently, older than 90 days, contradicts it on automation, or whose text limit differs from a verified platform limit. `driftCheck` re-fetches a record's pages and compares hashes.
+- **Editorial gate** (`src/syndication/editorial.mjs`, `content/editorial/phrases.json`). `createVoiceCheck(...)` returns the `(rendition) => {pass, notes}` hook that `gateRendition` takes; `editorialReport` returns the structured result. Checks: length (platform and brand), readability, banned phrases (PTGAE tonal poison, hype, unverifiable claims, engagement bait, stock AI phrases), style, claim-has-source (every checkable sentence is covered by a declared claim with an https source and a PTGAE status, numbers included), claim status shown, links, alt text, AI disclosure, provenance link. It is a phrase-and-structure check; it does not read for meaning.
+- **Post provenance** (`src/syndication/post-provenance.mjs`). `buildPostManifest` makes the same `561-provenance/1` manifest for a text post (subject is the address of the words without their last line; a `post` section holds source and commit, tools and models, human review, claims, gate report digest, disclosure decision for private sources, media credentials plan). `signPostManifest` and `verifyPostManifest` reuse `signManifest` and `verifyManifest`. A post ends with `Provenance: https://561.group/v/<12 characters>`. Media plans chain onto the maker's C2PA manifest with `--parent` and are marked `unsigned-design`.
+- **Handle probes** (`src/syndication/handles.mjs`). Read-only, four results: `taken`, `free-looking`, `unknown`, `not-probed`.
+- **Original profile readback** (`src/syndication/profile-readback.mjs`): credential-free, one bounded AppView read selected by a source-authored Bluesky profile decision, checking the exact chosen literal-byte NI and editorial gate, prior original text, pinned handle and DID. Distinguishes matching text, old text, changed text, identity dispute and unavailable source. It never edits a profile, grants provider authority or reports accepted Work. See [Group profile-copy receiving](docs/original-bluesky-profile-readback.md).
+- **CLI** (`apps/brand-presence.mjs`): `gate`, `copy`, `profile-readback`, `finalize`, `links`, `provenance`, `verify`, `handle`, `rules`, `drift`, `keygen --test-only`. Readback exit 0 means **only** public text matched; a provider/PDS and account-holder receipt are distinct. Exit 3 is a refusal or unmatched source.
+
+`ContentItem` is extended with optional `claims`, `sources`, `ai` and `authoring` (a `PostCandidateSet` in the CLI header). The extension does not change `renditionsFor`.

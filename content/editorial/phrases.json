@@ -1,0 +1,245 @@
+{
+  "type": "EditorialPhraseList",
+  "version": 1,
+  "observed-on": "2026-10-24",
+  "because": "Deterministic phrase rules for the pre-post editorial gate. ptgae-* rules are copied by pattern from the public MIT repository red-cup-engineering/ptgae-prose-analysis-service (src/analyze.mjs, rules PTG001-PTG044 that apply to short public prose) and from the Plain Technical General American English standard's 'tonal poison' list. The other categories are this list's own and are maintained here: a phrase belongs on the list when it states no checkable fact. A match is a refusal to post, not a rewrite: the author states the claim, names the measure, or removes the sentence.",
+  "severity": "refuse blocks the post; note is reported and does not block",
+  "rules": [
+    {
+      "id": "ptgae-throat-clearing",
+      "category": "ptgae-tonal",
+      "severity": "refuse",
+      "pattern": "\\b(?:it is important to note(?: that)?|it is worth noting(?: that)?|it should be noted that|it is worth mentioning(?: that)?)\\b",
+      "message": "State the proposition without throat-clearing.",
+      "source": "PTG001"
+    },
+    {
+      "id": "ptgae-stacked-modality",
+      "category": "ptgae-tonal",
+      "severity": "refuse",
+      "pattern": "\\b(?:may|might|could)\\s+(?:potentially|possibly|perhaps)\\b",
+      "message": "Use one uncertainty mechanism.",
+      "source": "PTG002"
+    },
+    {
+      "id": "ptgae-one-possible-approach",
+      "category": "ptgae-tonal",
+      "severity": "refuse",
+      "pattern": "\\bone possible (?:approach|option|way) (?:could|would|might) be\\b",
+      "message": "State the proposal directly.",
+      "source": "PTG003"
+    },
+    {
+      "id": "ptgae-in-order-to",
+      "category": "ptgae-tonal",
+      "severity": "note",
+      "pattern": "\\bin order to\\b",
+      "message": "Prefer 'to'.",
+      "source": "PTG004"
+    },
+    {
+      "id": "ptgae-serves-as",
+      "category": "ptgae-tonal",
+      "severity": "note",
+      "pattern": "\\bserves as\\b",
+      "message": "Prefer the direct verb.",
+      "source": "PTG005"
+    },
+    {
+      "id": "ptgae-represents-significant",
+      "category": "ptgae-tonal",
+      "severity": "refuse",
+      "pattern": "\\brepresents? a significant\\b",
+      "message": "Name the measure or consequence.",
+      "source": "PTG006"
+    },
+    {
+      "id": "ptgae-not-necessarily",
+      "category": "ptgae-tonal",
+      "severity": "refuse",
+      "pattern": "\\bthis does not necessarily mean\\b",
+      "message": "State the bounded implication directly.",
+      "source": "PTG007"
+    },
+    {
+      "id": "ptgae-it-is-possible-that",
+      "category": "ptgae-tonal",
+      "severity": "refuse",
+      "pattern": "\\bit is possible that\\b",
+      "message": "Use a claim status (Hypothesis, Unknown) instead.",
+      "source": "PTG009"
+    },
+    {
+      "id": "ptgae-due-to-the-fact",
+      "category": "ptgae-tonal",
+      "severity": "note",
+      "pattern": "\\bdue to the fact that\\b",
+      "message": "Prefer 'because'.",
+      "source": "PTG010"
+    },
+    {
+      "id": "ptgae-has-the-ability",
+      "category": "ptgae-tonal",
+      "severity": "note",
+      "pattern": "\\bhas the ability to\\b",
+      "message": "Prefer 'can'.",
+      "source": "PTG011"
+    },
+    {
+      "id": "ptgae-number-of",
+      "category": "ptgae-tonal",
+      "severity": "refuse",
+      "pattern": "\\b(?:there is|there are)\\s+(?:a number of|several different|various different)\\b",
+      "message": "Name the items or give the count.",
+      "source": "PTG012"
+    },
+    {
+      "id": "ptgae-crucial-role",
+      "category": "ptgae-tonal",
+      "severity": "refuse",
+      "pattern": "\\b(?:plays?|playing) (?:a )?(?:crucial|critical|important|key|pivotal) role\\b",
+      "message": "State what the subject does.",
+      "source": "PTG017"
+    },
+    {
+      "id": "ptgae-paradigm-shift",
+      "category": "ptgae-tonal",
+      "severity": "refuse",
+      "pattern": "\\bparadigm shift\\b",
+      "message": "Name the old model, the new model and the changed consequence.",
+      "source": "PTG021"
+    },
+    {
+      "id": "ptgae-wide-range",
+      "category": "ptgae-tonal",
+      "severity": "refuse",
+      "pattern": "\\ba wide (?:array|range|variety) of\\b",
+      "message": "Name the items or the count.",
+      "source": "PTG027"
+    },
+    {
+      "id": "ptgae-robust-scalable",
+      "category": "ptgae-tonal",
+      "severity": "refuse",
+      "pattern": "\\brobust and scalable\\b",
+      "message": "Name the tested reliability and scale.",
+      "source": "PTG029"
+    },
+    {
+      "id": "ptgae-going-forward",
+      "category": "ptgae-tonal",
+      "severity": "refuse",
+      "pattern": "\\bgoing forward\\b",
+      "message": "State the future rule, action or date.",
+      "source": "PTG032"
+    },
+    {
+      "id": "ptgae-further-research",
+      "category": "ptgae-tonal",
+      "severity": "refuse",
+      "pattern": "\\bfurther research is needed\\b",
+      "message": "Name the unanswered question or the next measurement.",
+      "source": "PTG036"
+    },
+    {
+      "id": "ptgae-section-boilerplate",
+      "category": "ptgae-tonal",
+      "severity": "refuse",
+      "pattern": "\\bmaintains knowledge and practices for\\b",
+      "message": "Generic scaffold; state the actual work.",
+      "source": "PTG013/PTG041"
+    },
+    {
+      "id": "hype-superlative-product",
+      "category": "hype",
+      "severity": "refuse",
+      "pattern": "\\b(?:revolutionary|revolutionize[sd]?|game[- ]?chang(?:er|ing)|groundbreaking|ground-breaking|cutting[- ]edge|bleeding[- ]edge|state[- ]of[- ]the[- ]art|next[- ]gen(?:eration)?|world[- ]class|best[- ]in[- ]class|industry[- ]leading|market[- ]leading|unparalleled|unrivaled|unrivalled|mind[- ]?blowing|jaw[- ]dropping|blazing(?:ly)?[- ]fast|lightning[- ]fast|turnkey|best[- ]of[- ]breed)\\b",
+      "message": "Hype word. Say what it does and how it was measured."
+    },
+    {
+      "id": "hype-verbs",
+      "category": "hype",
+      "severity": "refuse",
+      "pattern": "\\b(?:supercharge[sd]?|turbocharge[sd]?|skyrocket(?:s|ed|ing)?|unlock(?:s|ed|ing)? (?:the )?(?:power|potential|value)|harness(?:es|ed|ing)? the power|empower(?:s|ed|ing)?|disrupt(?:s|ed|ing)?|transform(?:s|ed|ing)? the way|take[sn]? .{0,20} to the next level|elevate[sd]? your)\\b",
+      "message": "Hype verb. State the concrete effect."
+    },
+    {
+      "id": "hype-announcement-voice",
+      "category": "hype",
+      "severity": "refuse",
+      "pattern": "\\b(?:(?:we(?:'re| are)|i(?:'m| am)) (?:so |very |truly |incredibly )?(?:excited|thrilled|delighted|proud|pleased|honou?red) (?:to|that)|stay tuned|big news|huge news|exciting news|check it out|don't miss|dont miss|you won't believe|you wont believe|act now|limited time|going viral|must[- ]read|must[- ]see|a must[- ]have)\\b",
+      "message": "Announcement voice. Say what changed."
+    },
+    {
+      "id": "hype-guarantee",
+      "category": "unverifiable",
+      "severity": "refuse",
+      "pattern": "\\b(?:guarantee[sd]?|100% (?:safe|proven|secure|accurate)|risk[- ]free|foolproof|bulletproof|flawless(?:ly)?|perfect(?:ly)? (?:secure|safe|accurate)|zero (?:risk|downtime|bugs)|never fails?)\\b",
+      "message": "Absolute claim. State the tested bound."
+    },
+    {
+      "id": "unverifiable-social-proof",
+      "category": "unverifiable",
+      "severity": "refuse",
+      "pattern": "\\b(?:trusted by|used by (?:thousands|millions|hundreds|teams|companies|developers)|loved by|customers love|our (?:happy )?customers|thousands of (?:users|customers|developers)|millions of (?:users|customers|developers)|fast[- ]growing|rapidly growing|award[- ]winning|industry[- ]recognized|widely (?:used|adopted)|leading (?:provider|platform|solution|company))\\b",
+      "message": "Social-proof claim with no stated source. Cite a count and a date, or remove it."
+    },
+    {
+      "id": "unverifiable-firsts",
+      "category": "unverifiable",
+      "severity": "refuse",
+      "pattern": "\\b(?:the (?:first|only|best|fastest|cheapest|most (?:advanced|powerful|secure|complete|comprehensive)) (?:\\w+ ){0,3}(?:to|in|of|that|for)\\b|first[- ]ever|world's first|one of a kind|unique(?:ly)? (?:in|among)|nothing (?:else )?like it)",
+      "message": "Superlative or priority claim. Cite the comparison or remove it."
+    },
+    {
+      "id": "bait-engagement",
+      "category": "engagement-bait",
+      "severity": "refuse",
+      "pattern": "\\b(?:like and subscribe|follow (?:for|4) follow|f4f|rt if|retweet if|repost if|share if you|tag (?:a )?friends?|drop a (?:comment|like)|smash (?:that|the) (?:like|button)|link in bio|dm (?:me )?for|giveaway|upvote (?:this|us)|vote for us|support us on product hunt|comment below|what do you think\\?|thoughts\\?|agree\\?)",
+      "message": "Engagement request. Platform rules and our own rule bar asking for engagement."
+    },
+    {
+      "id": "ai-tell-openers",
+      "category": "ai-tell",
+      "severity": "refuse",
+      "pattern": "\\b(?:in today's (?:fast[- ]paced|digital|ever[- ]changing|rapidly evolving)|in an (?:era|age|world) (?:where|of)|in the (?:ever[- ]evolving|ever[- ]changing) (?:world|landscape)|navigat(?:e|ing) the (?:complex )?landscape|at the end of the day|when it comes to|let's dive in|let us dive in|buckle up|here's the thing|here is the thing)\\b",
+      "message": "Stock opener that carries no information."
+    },
+    {
+      "id": "ai-tell-vocabulary",
+      "category": "ai-tell",
+      "severity": "refuse",
+      "pattern": "\\b(?:delv(?:e|es|ed|ing) (?:into|deeper)|tapestry|testament to|myriad|plethora|multifaceted|nuanced (?:approach|understanding)|holistic(?:ally)?|synerg(?:y|ies|istic)|seamless(?:ly)?|leverag(?:e|es|ed|ing)(?! (?:the )?(?:buying|debt|financial))|robust(?:ly)? (?:solution|framework|platform|system)|ecosystem of|realm of|beacon of|embark(?:s|ed|ing)? on a journey|journey (?:towards|to)|pave[sd]? the way|foster(?:s|ed|ing)? (?:a )?(?:culture|innovation|collaboration)|underscor(?:e|es|ed|ing)|pivotal|game-?changer|cornerstone of|stands as a|a testament)\\b",
+      "message": "Stock vocabulary. Use the plain word or name the specific thing."
+    },
+    {
+      "id": "ai-tell-contrast-frame",
+      "category": "ai-tell",
+      "severity": "refuse",
+      "pattern": "\\b(?:it(?:'s| is) not (?:just|only|merely|simply) [^.!?\\n]{1,80}[,;:\\u2014\\u2013-]\\s*(?:it(?:'s| is)|but))|\\bnot (?:just|only|merely) [^.!?\\n]{1,60}\\bbut (?:also )?|\\bmore than just\\b|\\bwhether you(?:'re| are) [^.!?\\n]{1,60} or\\b",
+      "message": "Contrast frame with no content. State the claim."
+    },
+    {
+      "id": "ai-tell-closers",
+      "category": "ai-tell",
+      "severity": "refuse",
+      "pattern": "\\b(?:in conclusion|in summary|to sum up|to summarize|all in all|ultimately,|the bottom line is|the future (?:of \\w+ )?is (?:bright|here)|only time will tell|the possibilities are endless|the sky(?:'s| is) the limit)\\b",
+      "message": "Closing filler. End when the information ends."
+    },
+    {
+      "id": "ai-tell-hedge-pairs",
+      "category": "ai-tell",
+      "severity": "refuse",
+      "pattern": "\\b(?:it(?:'s| is) worth (?:noting|mentioning|remembering)|it(?:'s| is) (?:important|crucial|essential|vital) to (?:note|remember|understand|recognize|consider)|needless to say|that being said|that said,|having said that|with that in mind)\\b",
+      "message": "Hedging connective. Delete or state the point."
+    },
+    {
+      "id": "unverifiable-business-metrics",
+      "category": "unverifiable",
+      "severity": "refuse",
+      "pattern": "\\b(?:(?:paying|growing|loyal|happy|active|enterprise) (?:customers|clients|users|subscribers|readers|members)|(?:has|have|with|serves?|serving|gained?|gaining) (?:\\d[\\d,]*\\s+|many\\s+|hundreds of\\s+|thousands of\\s+)?(?:customers|clients|users|subscribers|readers|patrons|supporters|followers)|growing revenue|revenue (?:growth|of \\$)|recurring revenue|monthly active)\\b",
+      "message": "Business metric or audience claim. The Group has no customer, revenue or audience evidence in any primary source; say what exists, with the page that shows it."
+    }
+  ],
+  "limits-note": "Emoji, exclamation marks, hashtags, dash density and readability are measured in code, not by phrase."
+}

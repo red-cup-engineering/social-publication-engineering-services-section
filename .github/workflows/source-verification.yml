@@ -10,7 +10,8 @@ concurrency:
   group: social-source-verification-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  test:
+  public-source:
+    name: Public source contracts · private SignCraft closure withheld
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -21,5 +22,20 @@ jobs:
         with:
           node-version: '24'
           package-manager-cache: false
-      - name: Verify original publisher, source-qualified audience and publication-intent tools
-        run: npm run verify
+      - name: Verify all dependency-free source and original social operator journeys
+        run: |
+          npm run check
+          npm run test:public-source
+      - name: Assert private native release gate was not waived
+        run: |
+          node --input-type=module -e "
+            import { readFileSync, existsSync } from 'node:fs';
+            const p=JSON.parse(readFileSync('package.json','utf8'));
+            if (p.dependencies?.['@red-cup-engineering/signcraft'] !== '0.6.2' ||
+                p.scripts.test !== 'node --test test/*.test.mjs' ||
+                p.scripts.prepublishOnly !== 'npm run verify' ||
+                !existsSync('test/community-evidence.test.mjs'))
+              process.exit(1);
+          "
+          echo '::notice title=Private SignCraft consumer withheld::Public source CI cannot load the original private SignCraft 0.6.2 dependency; full community-evidence tests and npm run verify remain mandatory on authorized independent native CI'
+          echo 'PUBLIC SOURCE ONLY: tests excluding test/community-evidence.test.mjs ran without private supplier. Full npm run verify, immutable SignCraft 0.6.2 closure, registry artifact, installation, real external posting/readback, and economic receiving are NOT qualified.' >> "$GITHUB_STEP_SUMMARY"

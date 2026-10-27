@@ -1,0 +1,996 @@
+{
+  "type": "PlatformRuleSet",
+  "version": 2,
+  "status": "partially-verified",
+  "because": "Rules re-read from primary platform pages on 2026-10-24 by the brand-presence thread. Each rule names its evidence record (x-evidence.record, a platform-terms record in 561-group-services-section data/records/platform-terms-records/) and, per field, whether that field is verified, partial, unverified, not-stated or our own policy (own-policy: a cap or window we choose inside the platform limit). Platforms without a rule here (facebook-page, discord, newsletter, website, hive) keep their seed rule, which is unverified. A platform that prohibits automation is mode prohibited or manual-only; the engine never drives it.",
+  "supersedes": "content/platform-rules.seed.json (status seed-unverified) for the platforms listed here",
+  "rules": {
+    "bluesky": {
+      "platform": "bluesky",
+      "checkedOn": "2026-10-24",
+      "text": {
+        "maxGraphemes": 300
+      },
+      "hashtags": {
+        "max": 3
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "1:1",
+            "4:5",
+            "16:9"
+          ],
+          "maxBytes": 976560,
+          "maxPerPost": 4,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [
+            "9:16",
+            "1:1",
+            "16:9"
+          ],
+          "maxSeconds": 180,
+          "maxBytes": 52428800
+        }
+      },
+      "automation": {
+        "mode": "api-allowed-bot-disclosed",
+        "note": "The \"bot\" self-label is offered, not required; house policy sets it on every automated account and says so in the bio."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": false,
+        "mechanism": "text-label",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 4,
+          "minGapMinutes": 180
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "startHour": 8,
+          "endHour": 20
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 30
+      },
+      "linkBack": "required",
+      "cadence": {
+        "targetPerDay": 2
+      },
+      "x-evidence": {
+        "record": "platform-terms-bluesky",
+        "observedOn": "2026-10-24",
+        "fields": {
+          "text.maxGraphemes": "unverified",
+          "automation.mode": "verified",
+          "aiDisclosure": "not-stated",
+          "limits.perAccount": "own-policy",
+          "windows": "own-policy",
+          "duplicates": "own-policy",
+          "cadence": "own-policy",
+          "hashtags.max": "own-policy"
+        },
+        "notes": "Platform write limit is 5,000 points/hour and 35,000/day (a create costs 3); our caps are far lower by choice. Post length 300 graphemes is enforced by the engine adapter; the platform page for it could not be fetched. The platform has no AI-content rule; the label is house policy."
+      }
+    },
+    "x": {
+      "platform": "x",
+      "checkedOn": "2026-10-24",
+      "text": {
+        "maxGraphemes": 280
+      },
+      "hashtags": {
+        "max": 2
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "1:1",
+            "16:9"
+          ],
+          "maxBytes": 5242880,
+          "maxPerPost": 4,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [
+            "9:16",
+            "1:1",
+            "16:9"
+          ],
+          "maxSeconds": 140,
+          "maxBytes": 536870912
+        }
+      },
+      "automation": {
+        "mode": "manual-only",
+        "note": "Manual-only. X's API is pay-per-use with no free tier (docs.x.com pricing, read 2026-10-24): Post: Create costs $0.015 per request and Post: Create (with URL) $0.200, so even a link-free API post costs cash and the Group spends none (requirement group-work-continues-on-zero-cash-compute). Posting by hand in the web app costs nothing, so X runs as link-free native posts written by the engine as packets and posted by a person, with the brand site in the profile's website field. A post needs no canonical link to participate; the gate still requires the provenance line, which is the post's only URL. If X adds a free tier, change the mode to api-allowed-bot-disclosed: automated accounts must use the official API only, enable the Automated label and say in the bio that the account is a bot and who operates it. AI-generated replies need X approval; this account does not reply."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": false,
+        "mechanism": "text-label",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 3,
+          "minGapMinutes": 240
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "startHour": 8,
+          "endHour": 20
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 30
+      },
+      "linkBack": "optional",
+      "cadence": {
+        "targetPerDay": 1
+      },
+      "x-evidence": {
+        "record": "platform-terms-x",
+        "observedOn": "2026-10-24",
+        "fields": {
+          "text.maxGraphemes": "unverified",
+          "automation.mode": "verified",
+          "aiDisclosure": "verified",
+          "limits.perAccount": "own-policy",
+          "windows": "own-policy",
+          "duplicates": "own-policy",
+          "cadence": "own-policy",
+          "hashtags.max": "own-policy"
+        },
+        "notes": "Mode is manual-only because of cost, not because the platform bars automation. Reach of link posts versus link-free posts: X's product head and owner said in July 2026 that no link penalty has applied for over a year (reported by PPC Land and Free Press Journal, secondary sources, not read on X itself); the open-sourced ranking code shows no explicit URL rule (the same secondary report); marketing blogs claiming a 50 to 90 percent penalty are unsourced. Treated as unverified: the plan does not depend on links either way.",
+        "supplementary": "platform-terms-x-link-and-cost-2026-10-25"
+      }
+    },
+    "linkedin": {
+      "platform": "linkedin",
+      "checkedOn": "2026-10-24",
+      "text": {
+        "maxGraphemes": 3000
+      },
+      "hashtags": {
+        "max": 3
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "1:1",
+            "4:5",
+            "16:9"
+          ],
+          "maxBytes": 8388608,
+          "maxPerPost": 9,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [
+            "9:16",
+            "1:1",
+            "16:9"
+          ],
+          "maxSeconds": 600,
+          "maxBytes": 5368709120
+        }
+      },
+      "automation": {
+        "mode": "manual-only",
+        "note": "The API Terms prohibit using the APIs to automate posting outside approved programs. Posting through the Community Management API needs an approved application. Until that is approved, the owner posts from the Page, using the engine's manual packet. Do not use third-party posting tools."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": true,
+        "mechanism": "text-label",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 1,
+          "minGapMinutes": 1440
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            2,
+            3,
+            4
+          ],
+          "startHour": 8,
+          "endHour": 11
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 60
+      },
+      "linkBack": "required",
+      "cadence": {
+        "targetPerDay": 1
+      },
+      "x-evidence": {
+        "record": "platform-terms-linkedin",
+        "observedOn": "2026-10-24",
+        "fields": {
+          "text.maxGraphemes": "unverified",
+          "automation.mode": "partial",
+          "aiDisclosure": "verified",
+          "limits.perAccount": "own-policy",
+          "windows": "own-policy",
+          "duplicates": "own-policy",
+          "cadence": "own-policy",
+          "hashtags.max": "own-policy"
+        },
+        "notes": "Change mode to api-allowed only after LinkedIn approves a Community Management API application for the Page."
+      }
+    },
+    "threads": {
+      "platform": "threads",
+      "checkedOn": "2026-10-24",
+      "text": {
+        "maxGraphemes": 500
+      },
+      "hashtags": {
+        "max": 1
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "1:1",
+            "4:5",
+            "16:9"
+          ],
+          "maxBytes": 8388608,
+          "maxPerPost": 10,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [
+            "9:16",
+            "1:1"
+          ],
+          "maxSeconds": 300,
+          "maxBytes": 1073741824
+        }
+      },
+      "automation": {
+        "mode": "manual-only",
+        "note": "The Threads API needs a Meta app, a linked Instagram account and App Review per permission. Manual until that is approved."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": true,
+        "mechanism": "platform-ui-label",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 3,
+          "minGapMinutes": 240
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "startHour": 10,
+          "endHour": 21
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 60
+      },
+      "linkBack": "optional",
+      "cadence": {
+        "targetPerDay": 1
+      },
+      "x-evidence": {
+        "record": "platform-terms-threads",
+        "observedOn": "2026-10-24",
+        "fields": {
+          "text.maxGraphemes": "verified",
+          "automation.mode": "verified",
+          "aiDisclosure": "verified",
+          "limits.perAccount": "own-policy",
+          "windows": "own-policy",
+          "duplicates": "own-policy",
+          "cadence": "own-policy",
+          "hashtags.max": "own-policy"
+        },
+        "notes": "Threads Terms of Use and Supplemental Terms are script shells; nothing from them is verified. API limit is 250 posts per profile per 24 hours (verified on the API page)."
+      }
+    },
+    "instagram": {
+      "platform": "instagram",
+      "checkedOn": "2026-10-24",
+      "text": {
+        "maxGraphemes": 2200
+      },
+      "hashtags": {
+        "max": 5
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "1:1",
+            "4:5"
+          ],
+          "maxBytes": 8388608,
+          "maxPerPost": 10,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [
+            "9:16"
+          ],
+          "maxSeconds": 90,
+          "maxBytes": 1073741824
+        }
+      },
+      "automation": {
+        "mode": "manual-only",
+        "note": "API publishing needs a professional account, a Meta app and App Review; images and video only (no text-only posts); API image format is JPEG. Manual until approved."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": true,
+        "mechanism": "platform-ui-label",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 1,
+          "minGapMinutes": 1440
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "startHour": 10,
+          "endHour": 21
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 60
+      },
+      "linkBack": "optional",
+      "cadence": {
+        "targetPerDay": 1
+      },
+      "x-evidence": {
+        "record": "platform-terms-instagram",
+        "observedOn": "2026-10-24",
+        "fields": {
+          "text.maxGraphemes": "partial",
+          "automation.mode": "verified",
+          "aiDisclosure": "verified",
+          "limits.perAccount": "own-policy",
+          "windows": "own-policy",
+          "duplicates": "own-policy",
+          "cadence": "own-policy",
+          "hashtags.max": "own-policy"
+        },
+        "notes": "The Instagram Terms of Use are a script shell; nothing from them is verified. The API page gives both 100 and 50 posts per 24 hours without reconciling them."
+      }
+    },
+    "youtube": {
+      "platform": "youtube",
+      "checkedOn": "2026-10-24",
+      "text": {
+        "maxGraphemes": 5000,
+        "titleMaxGraphemes": 100
+      },
+      "hashtags": {
+        "max": 3
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "16:9"
+          ],
+          "maxBytes": 2097152,
+          "maxPerPost": 1,
+          "altTextRequired": false
+        },
+        "video": {
+          "aspects": [
+            "9:16",
+            "16:9"
+          ],
+          "maxSeconds": 180,
+          "maxBytes": 137438953472
+        }
+      },
+      "automation": {
+        "mode": "api-allowed",
+        "note": "videos.insert needs OAuth by the channel owner. Quota page (2026-10-15): 10,000 units/day for other endpoints plus a separate 100 videos.insert calls/day. An older revision says unaudited projects upload privately; the current reference does not. Test one upload from a fresh project before relying on it."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": true,
+        "mechanism": "api-field",
+        "apiField": "status.containsSyntheticMedia",
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 2,
+          "minGapMinutes": 240
+        },
+        "perPlatform": {
+          "perDay": 6
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "startHour": 9,
+          "endHour": 21
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 90
+      },
+      "linkBack": "optional",
+      "cadence": {
+        "targetPerDay": 1
+      },
+      "x-evidence": {
+        "record": "platform-terms-youtube",
+        "observedOn": "2026-10-24",
+        "fields": {
+          "text.maxGraphemes": "unverified",
+          "automation.mode": "partial",
+          "aiDisclosure": "verified",
+          "limits.perAccount": "own-policy",
+          "windows": "own-policy",
+          "duplicates": "own-policy",
+          "cadence": "own-policy",
+          "hashtags.max": "own-policy"
+        },
+        "notes": "All numeric text limits here are from memory (unverified). The AI \"altered or synthetic content\" disclosure is verified."
+      }
+    },
+    "tiktok": {
+      "platform": "tiktok",
+      "checkedOn": "2026-10-24",
+      "text": {
+        "maxGraphemes": 2200
+      },
+      "hashtags": {
+        "max": 5
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "9:16"
+          ],
+          "maxBytes": 20971520,
+          "maxPerPost": 35,
+          "altTextRequired": false
+        },
+        "video": {
+          "aspects": [
+            "9:16"
+          ],
+          "maxSeconds": 600,
+          "maxBytes": 4294967296
+        }
+      },
+      "automation": {
+        "mode": "manual-only",
+        "note": "Unaudited Content Posting API clients can only post privately, capped per day; the consumer Terms describe the service as for private, non-commercial use; not recommended for any brand."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": true,
+        "mechanism": "api-field",
+        "apiField": "post_info.is_aigc",
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 1,
+          "minGapMinutes": 1440
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "startHour": 12,
+          "endHour": 22
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 60
+      },
+      "linkBack": "optional",
+      "cadence": {
+        "targetPerDay": 1
+      },
+      "x-evidence": {
+        "record": "platform-terms-tiktok",
+        "observedOn": "2026-10-24",
+        "fields": {
+          "text.maxGraphemes": "partial",
+          "automation.mode": "verified",
+          "aiDisclosure": "verified",
+          "limits.perAccount": "own-policy",
+          "windows": "own-policy",
+          "duplicates": "own-policy",
+          "cadence": "own-policy",
+          "hashtags.max": "own-policy"
+        },
+        "notes": "No brand has a short-video product. Keep the rule so a manual packet can be made if the owner decides otherwise."
+      }
+    },
+    "reddit": {
+      "platform": "reddit",
+      "checkedOn": "2026-10-24",
+      "text": {
+        "maxGraphemes": 300,
+        "titleMaxGraphemes": 300
+      },
+      "hashtags": {
+        "max": 0
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "1:1",
+            "4:5",
+            "16:9"
+          ],
+          "maxBytes": 20971520,
+          "maxPerPost": 20,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [
+            "9:16",
+            "16:9"
+          ],
+          "maxSeconds": 900,
+          "maxBytes": 1073741824
+        }
+      },
+      "automation": {
+        "mode": "manual-only",
+        "note": "Bot and API use needs approval and shows an \"App\" label; unauthenticated tooling is blocked. The owner posts as themselves in communities whose rules were read; no brand account is planned. The self-promotion ratio is a community norm and was not verified from a primary page."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": false,
+        "mechanism": "text-label",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 1,
+          "minGapMinutes": 5760
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "startHour": 9,
+          "endHour": 12
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 365
+      },
+      "linkBack": "optional",
+      "cadence": {
+        "targetPerDay": 1
+      },
+      "x-evidence": {
+        "record": "platform-terms-reddit",
+        "observedOn": "2026-10-24",
+        "fields": {
+          "text.maxGraphemes": "unverified",
+          "automation.mode": "partial",
+          "aiDisclosure": "not-stated",
+          "limits.perAccount": "own-policy",
+          "windows": "own-policy",
+          "duplicates": "own-policy",
+          "cadence": "own-policy",
+          "hashtags.max": "own-policy"
+        },
+        "notes": "Not recommended for brand accounts."
+      }
+    },
+    "hackernews": {
+      "platform": "hackernews",
+      "checkedOn": "2026-10-24",
+      "text": {
+        "maxGraphemes": 2000,
+        "titleMaxGraphemes": 80,
+        "linkOnly": true
+      },
+      "hashtags": {
+        "max": 0
+      },
+      "media": {
+        "image": {
+          "aspects": [],
+          "maxBytes": 0,
+          "maxPerPost": 0,
+          "altTextRequired": false
+        },
+        "video": {
+          "aspects": [],
+          "maxSeconds": 0,
+          "maxBytes": 0
+        }
+      },
+      "automation": {
+        "mode": "prohibited",
+        "note": "Posting by automation is not allowed, and generated text is not allowed in submissions or comments. A human may submit their own project as a Show HN with their own words; the engine produces no text for this platform and no packet."
+      },
+      "aiDisclosure": {
+        "required": false,
+        "offered": false,
+        "mechanism": "none",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 1,
+          "minGapMinutes": 10080
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            2,
+            3,
+            4
+          ],
+          "startHour": 8,
+          "endHour": 11
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 365
+      },
+      "linkBack": "required",
+      "cadence": {
+        "targetPerDay": 1
+      },
+      "x-evidence": {
+        "record": "platform-terms-hacker-news",
+        "observedOn": "2026-10-24",
+        "fields": {
+          "text.maxGraphemes": "partial",
+          "automation.mode": "verified",
+          "aiDisclosure": "verified",
+          "limits.perAccount": "own-policy",
+          "windows": "own-policy",
+          "duplicates": "own-policy",
+          "cadence": "own-policy",
+          "hashtags.max": "own-policy"
+        },
+        "notes": "Verified on news.ycombinator.com/newsguidelines.html and newsfaq.html."
+      }
+    },
+    "devto": {
+      "platform": "devto",
+      "checkedOn": "2026-10-24",
+      "text": {
+        "maxGraphemes": 20000,
+        "titleMaxGraphemes": 128
+      },
+      "hashtags": {
+        "max": 4
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "16:9"
+          ],
+          "maxBytes": 5242880,
+          "maxPerPost": 10,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [],
+          "maxSeconds": 0,
+          "maxBytes": 0
+        }
+      },
+      "automation": {
+        "mode": "api-allowed",
+        "note": "Forem API v1 with a key. Articles are created as drafts (published=false) and published by a person. An organization is created from a personal member account."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": true,
+        "mechanism": "text-label",
+        "apiField": null,
+        "textLabel": "#ABotWroteThis"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 1,
+          "minGapMinutes": 4320
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "startHour": 8,
+          "endHour": 12
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 365
+      },
+      "linkBack": "required",
+      "cadence": {
+        "targetPerDay": 1
+      },
+      "x-evidence": {
+        "record": "platform-terms-dev-to",
+        "observedOn": "2026-10-24",
+        "fields": {
+          "text.maxGraphemes": "partial",
+          "automation.mode": "verified",
+          "aiDisclosure": "verified",
+          "limits.perAccount": "own-policy",
+          "windows": "own-policy",
+          "duplicates": "own-policy",
+          "cadence": "own-policy",
+          "hashtags.max": "own-policy"
+        },
+        "notes": "AI-assisted articles must be disclosed (the #ABotWroteThis tag or text) and must not promote any business, including your own; a brand article that advertises is outside the rule."
+      }
+    },
+    "substack": {
+      "platform": "substack",
+      "checkedOn": "2026-10-24",
+      "text": {
+        "maxGraphemes": 20000,
+        "titleMaxGraphemes": 120
+      },
+      "hashtags": {
+        "max": 0
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "16:9",
+            "1:1"
+          ],
+          "maxBytes": 1048576,
+          "maxPerPost": 6,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [],
+          "maxSeconds": 0,
+          "maxBytes": 0
+        }
+      },
+      "automation": {
+        "mode": "manual-only",
+        "note": "No public posting API is documented; the Terms bar crawling and scraping. A person publishes the post."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": false,
+        "mechanism": "text-label",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 1,
+          "minGapMinutes": 10080
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            2,
+            4
+          ],
+          "startHour": 7,
+          "endHour": 10
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 365
+      },
+      "linkBack": "required",
+      "cadence": {
+        "targetPerDay": 1
+      },
+      "x-evidence": {
+        "record": "platform-terms-substack",
+        "observedOn": "2026-10-24",
+        "fields": {
+          "text.maxGraphemes": "not-stated",
+          "automation.mode": "partial",
+          "aiDisclosure": "verified",
+          "limits.perAccount": "own-policy",
+          "windows": "own-policy",
+          "duplicates": "own-policy",
+          "cadence": "own-policy",
+          "hashtags.max": "own-policy"
+        },
+        "notes": "The publication subdomain the Group uses is not 561group.substack.com (404); check which one it is before registering anything."
+      }
+    },
+    "activitypub-own": {
+      "platform": "activitypub-own",
+      "checkedOn": "2026-10-24",
+      "text": {
+        "maxGraphemes": 5000
+      },
+      "hashtags": {
+        "max": 5
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "1:1",
+            "4:5",
+            "16:9"
+          ],
+          "maxBytes": 8388608,
+          "maxPerPost": 4,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [
+            "9:16",
+            "1:1",
+            "16:9"
+          ],
+          "maxSeconds": 600,
+          "maxBytes": 104857600
+        }
+      },
+      "automation": {
+        "mode": "api-allowed-bot-disclosed",
+        "note": "Our own actors are type Service and carry the bot flag. Remote servers may limit or block our domain."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": false,
+        "mechanism": "text-label",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 4,
+          "minGapMinutes": 180
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "startHour": 7,
+          "endHour": 22
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 14
+      },
+      "linkBack": "required",
+      "cadence": {
+        "targetPerDay": 2
+      },
+      "x-evidence": {
+        "record": "platform-terms-activitypub-self-hosted",
+        "observedOn": "2026-10-24",
+        "fields": {
+          "text.maxGraphemes": "unverified",
+          "automation.mode": "verified",
+          "aiDisclosure": "not-stated",
+          "limits.perAccount": "own-policy",
+          "windows": "own-policy",
+          "duplicates": "own-policy",
+          "cadence": "own-policy",
+          "hashtags.max": "own-policy"
+        },
+        "notes": "Five house ActivityPub actors have key files; live federation was not verified."
+      }
+    }
+  }
+}
