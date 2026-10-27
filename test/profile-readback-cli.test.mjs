@@ -69,7 +69,7 @@ test('native brand-presence CLI receives exact matching AppView source reading',
   assert.equal(body.verifiedCompletion,false);
   assert.equal(body.expectedNi,ni(desired));
   assert.equal(body.observedNi,ni(desired));
-  assert.equal(body.observedAt,currentDate);
+  assert.equal(body.observedAt,new Date(currentDate).toISOString());
   assert.equal(readFileSync(f.path,'utf8'),f.contents);
   assert.deepEqual(readdirSync(f.root),['original-copy-record.json']);
 });
