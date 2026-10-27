@@ -10,6 +10,7 @@
  *   provenance  build (and, with --key, sign) a provenance record per rendition
  *   verify      verify a provenance record, optionally against the text as posted
  *   handle      probe a handle on a platform (read-only)
+ *   profile-readback  compare a source-admitted Bluesky public-copy decision with the public AppView
  *   rules       check the verified PlatformRuleSet against its dated terms records
  *   drift       re-fetch a terms record's pages and compare hashes
  *   keygen      make a TEST-ONLY Ed25519 key (production keys are an owner decision and are never made here)
@@ -27,6 +28,7 @@ import { niOfJson } from '../src/syndication/canonical.mjs';
 import { compilePhrases, editorialReport, profileFor, urlsIn } from '../src/syndication/editorial.mjs';
 import { buildPostManifest, footerFor, signPostManifest, splitProvenanceFooter, verifyPostManifest } from '../src/syndication/post-provenance.mjs';
 import { PROBES, probeHandle } from '../src/syndication/handles.mjs';
+import { readBlueskyProfileDecision } from '../src/syndication/profile-readback.mjs';
 import { checkEvidence, driftCheck, mergeRuleSets } from '../src/syndication/rules-evidence.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -198,6 +200,24 @@ async function main() {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       break;
     }
+    case 'profile-readback': {
+      // The existing public-copy record owns the expected bytes, pinned DID and
+      // earlier observation. No account key, password, session or mutation.
+      const path = positional[0] ?? fail('usage: profile-readback <original-public-copy-record.json> [--now UTC ISO]');
+      let reading;
+      try {
+        reading = await readBlueskyProfileDecision(readJson(path),{
+          observedAt: new Date(nowMs).toISOString()
+        });
+      } catch {
+        fail('refused: original Bluesky public-copy source invalid; no public profile assertion was made',3);
+      }
+      process.stdout.write(JSON.stringify(reading,null,2)+'\n');
+      // Exit 0 means only this public AppView observation matched. It is NOT
+      // a qualified Group Work discharge, account-holder receipt or PDS proof.
+      process.exit(reading.standing === 'text-match' ? 0 : 3);
+      break;
+    }
     case 'rules': {
       const recordsDir = positional[0] ?? fail('usage: rules <platform-terms-records dir>');
       const records = {};
@@ -226,7 +246,7 @@ async function main() {
       break;
     }
     default:
-      fail('commands: gate | copy | finalize | links | provenance | verify | handle | rules | drift | keygen');
+      fail('commands: gate | copy | profile-readback | finalize | links | provenance | verify | handle | rules | drift | keygen');
   }
 }
 if (import.meta.url === `file://${process.argv[1]}`) main().catch((error) => fail(String(error.stack ?? error), 2));
