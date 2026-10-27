@@ -6,17 +6,17 @@ import {
   profileCopyNi, admitBlueskyProfileDecision, readBlueskyProfileDecision,
 } from '../src/syndication/profile-readback.mjs';
 
-const actor='561.group';
-const did='did:plc:wpmzbzu62jkeapaptmv7lr5i';
-const desired='Four organizations building institutions: research, engineering, operations and public services. We publish what is done and what is only planned. Operated by Morgan Sennhauser. Posts are drafted by AI agents.';
-const desiredNi='ni:///sha-256;hn4Z9c7UoLqoZQeNy9ExHLd5OYFmFPajQn1fAXr3Q-g';
+const actor='example.org';
+const did='did:plc:aaaaaaaaaaaaaaaaaaaaaaaa';
+const desired='A public profile can report measured activity while distinguishing future plans.';
+const desiredNi='ni:///sha-256;hWs1aXdBada_J3v4EicdZrWpnkCISNiBIjBdqsDQLic';
 const old='Old unreceived public description';
-const endpoint=BLUESKY_PUBLIC_PROFILE_ENDPOINT+'?actor=561.group';
-function decision(){return {id:'2026-10-25-bluesky-561-group-profile-text',kind:'public-copy',brand:'561-group',
-  platform:'bluesky',field:'description (profile bio)', account:'@561.group ('+did+')',
+const endpoint=BLUESKY_PUBLIC_PROFILE_ENDPOINT+'?actor=example.org';
+function decision(){return {id:'2026-10-25-bluesky-example-org-profile-text',kind:'public-copy',brand:'example-org',
+  platform:'bluesky',field:'description (profile bio)', account:'@example.org ('+did+')',
   observed:{source:endpoint, text:old,textNi:profileCopyNi(old)},
-  options:[{id:'keep-current',candidate:{type:'CopyCandidate',brand:'561-group',platform:'bluesky',field:'description',text:old},gate:{pass:false}},
-    {id:'chosen',candidate:{type:'CopyCandidate',brand:'561-group',platform:'bluesky',field:'description',text:desired},gate:{pass:true,report:{textNi:desiredNi}}}],
+  options:[{id:'keep-current',candidate:{type:'CopyCandidate',brand:'example-org',platform:'bluesky',field:'description',text:old},gate:{pass:false}},
+    {id:'chosen',candidate:{type:'CopyCandidate',brand:'example-org',platform:'bluesky',field:'description',text:desired},gate:{pass:true,report:{textNi:desiredNi}}}],
   chosen:{id:'chosen',textNi:desiredNi}}}
 const profile=(description=desired,over={})=>({did,handle:actor,description,indexedAt:'2026-10-27T18:00:00Z',...over});
 const at='2026-10-27T18:10:00Z';
@@ -99,7 +99,7 @@ test('forged chosen gate or candidate refuses before contacting provider',async(
 
 test('foreign account, prior observation and source address refuse before the public read',async()=>{
   const edits=[d=>{d.account='@other.example ('+did+')'},
-    d=>{d.account='@561.group (did:plc:bad)'},d=>{d.observed.source='https://evil.example/xrpc'},
+    d=>{d.account='@example.org (did:plc:bad)'},d=>{d.observed.source='https://evil.example/xrpc'},
     d=>{d.observed.textNi=desiredNi},d=>{d.id='../../wrong'},
     d=>{d.platform='x'},d=>{d.field='secret'},d=>{d.chosen.id='missing'}];
   for(const edit of edits){const d=decision();edit(d);let calls=0;
