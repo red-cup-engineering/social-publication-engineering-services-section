@@ -1,6 +1,6 @@
 {
   "name": "@red-cup-engineering/social-publication-services-section",
-  "version": "0.3.0-dev.0",
+  "version": "0.3.0",
   "private": false,
   "type": "module",
   "description": "Credential-blind, provider-neutral social publication mechanics with ni-addressed intents and receipts.",
@@ -48,7 +48,7 @@
     "url": "https://github.com/561-group/.github/blob/main/TIPS.md"
   },
   "dependencies": {
-    "@red-cup-engineering/signcraft": "0.6.1-dev.508"
+    "@red-cup-engineering/signcraft": "0.6.2"
   },
   "publishConfig": {
     "registry": "https://registry.561.group/",
