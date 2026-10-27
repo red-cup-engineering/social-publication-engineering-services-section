@@ -8,9 +8,9 @@ import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const cli=fileURLToPath(new URL('../apps/brand-presence.mjs',import.meta.url));
-const desired='Four organizations building institutions: research, engineering, operations and public services. We publish what is done and what is only planned. Operated by Morgan Sennhauser. Posts are drafted by AI agents.';
+const desired='A public profile can report measured activity while distinguishing future plans.';
 const old='Source formerly displayed another public description';
-const did='did:plc:wpmzbzu62jkeapaptmv7lr5i';
+const did='did:plc:aaaaaaaaaaaaaaaaaaaaaaaa';
 const ni=text=>'ni:///sha-256;'+createHash('sha256').update(text,'utf8').digest('base64url');
 const currentDate='2026-10-27T18:10:00Z';
 const fixture=t=>{
@@ -18,15 +18,15 @@ const fixture=t=>{
   t.after(()=>rmSync(root,{force:true,recursive:true}));
   const path=join(root,'original-copy-record.json');
   const record={
-    id:'2026-10-25-bluesky-561-group-profile-text',kind:'public-copy',
-    brand:'561-group',platform:'bluesky',field:'description (profile bio)',
-    account:'@561.group ('+did+')',
-    observed:{source:'https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=561.group',
+    id:'2026-10-25-bluesky-example-org-profile-text',kind:'public-copy',
+    brand:'example-org',platform:'bluesky',field:'description (profile bio)',
+    account:'@example.org ('+did+')',
+    observed:{source:'https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=example.org',
       text:old,textNi:ni(old)},
     options:[
-      {id:'keep-current',candidate:{type:'CopyCandidate',brand:'561-group',
+      {id:'keep-current',candidate:{type:'CopyCandidate',brand:'example-org',
         platform:'bluesky',field:'description',text:old},gate:{pass:false}},
-      {id:'new-copy',candidate:{type:'CopyCandidate',brand:'561-group',
+      {id:'new-copy',candidate:{type:'CopyCandidate',brand:'example-org',
         platform:'bluesky',field:'description',text:desired},
         gate:{pass:true,report:{textNi:ni(desired)}}}],
     chosen:{id:'new-copy',textNi:ni(desired)}
@@ -37,16 +37,16 @@ const fixture=t=>{
 };
 const preload=[
   "globalThis.fetch=async (url,options)=>{",
-  "  const expected='https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=561.group';",
+  "  const expected='https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=example.org';",
   "  if(url!==expected || options.method!=='GET' || options.redirect!=='manual' || options.credentials!=='omit')",
   "    throw new TypeError('Wrong source or transport');",
   "  if(process.env.PROFILE_API_STATE==='unavailable')throw Error('PROVIDER-PRIVATE-DO-NOT-LEAK');",
   "  const previous='Source formerly displayed another public description';",
-  "  const chosen='Four organizations building institutions: research, engineering, operations and public services. We publish what is done and what is only planned. Operated by Morgan Sennhauser. Posts are drafted by AI agents.';",
+  "  const chosen='A public profile can report measured activity while distinguishing future plans.';",
   "  const status=process.env.PROFILE_API_STATE;",
   "  return Response.json({",
-  "    did:status==='identity-conflict'?'did:plc:other':'did:plc:wpmzbzu62jkeapaptmv7lr5i',",
-  "    handle:'561.group',",
+  "    did:status==='identity-conflict'?'did:plc:other':'did:plc:aaaaaaaaaaaaaaaaaaaaaaaa',",
+  "    handle:'example.org',",
   "    description:status==='matched'?chosen:status==='prior'?previous:'Different public copy'",
   "  });",
   "};"
