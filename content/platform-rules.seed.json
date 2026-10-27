@@ -1,0 +1,1094 @@
+{
+  "type": "PlatformRuleSet",
+  "version": 1,
+  "status": "seed-unverified",
+  "because": "Seed values written from the author's general knowledge on 2026-10-24 so the engine has conservative data to run against. Nothing here has been re-read from a platform's current terms. The brand/account thread owns the verified rule set (per-platform ToS and automation rules as data) and replaces this file; the engine only reads the PlatformRuleSet interface. Where unsure, the seed chooses the stricter value (manual-only, bot-disclosed, label required).",
+  "rules": {
+    "bluesky": {
+      "platform": "bluesky",
+      "checkedOn": null,
+      "text": {
+        "maxGraphemes": 300
+      },
+      "hashtags": {
+        "max": 3
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "1:1",
+            "4:5",
+            "16:9"
+          ],
+          "maxBytes": 976560,
+          "maxPerPost": 4,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [
+            "9:16",
+            "1:1",
+            "16:9"
+          ],
+          "maxSeconds": 180,
+          "maxBytes": 52428800
+        }
+      },
+      "automation": {
+        "mode": "api-allowed-bot-disclosed",
+        "note": "Automated accounts say so in their profile."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": false,
+        "mechanism": "text-label",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 2,
+          "perDay": 6,
+          "minGapMinutes": 90
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "startHour": 8,
+          "endHour": 20
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 30
+      },
+      "linkBack": "required",
+      "cadence": {
+        "targetPerDay": 2
+      }
+    },
+    "mastodon": {
+      "platform": "mastodon",
+      "checkedOn": null,
+      "text": {
+        "maxGraphemes": 500
+      },
+      "hashtags": {
+        "max": 4
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "1:1",
+            "4:5",
+            "16:9"
+          ],
+          "maxBytes": 8388608,
+          "maxPerPost": 4,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [
+            "9:16",
+            "1:1",
+            "16:9"
+          ],
+          "maxSeconds": 300,
+          "maxBytes": 41943040
+        }
+      },
+      "automation": {
+        "mode": "api-allowed-bot-disclosed",
+        "note": "Account must carry the bot flag; instance rules vary and the instance's own rules win."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": false,
+        "mechanism": "text-label",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 2,
+          "perDay": 6,
+          "minGapMinutes": 90
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "startHour": 8,
+          "endHour": 21
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 30
+      },
+      "linkBack": "required",
+      "cadence": {
+        "targetPerDay": 2
+      }
+    },
+    "activitypub-own": {
+      "platform": "activitypub-own",
+      "checkedOn": null,
+      "text": {
+        "maxGraphemes": 5000
+      },
+      "hashtags": {
+        "max": 5
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "1:1",
+            "4:5",
+            "16:9"
+          ],
+          "maxBytes": 8388608,
+          "maxPerPost": 4,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [
+            "9:16",
+            "1:1",
+            "16:9"
+          ],
+          "maxSeconds": 600,
+          "maxBytes": 104857600
+        }
+      },
+      "automation": {
+        "mode": "api-allowed",
+        "note": "The house's own ActivityPub servers; actors are service actors and say so."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": false,
+        "mechanism": "text-label",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 2,
+          "perDay": 8,
+          "minGapMinutes": 60
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "startHour": 7,
+          "endHour": 22
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 14
+      },
+      "linkBack": "required",
+      "cadence": {
+        "targetPerDay": 2
+      }
+    },
+    "youtube": {
+      "platform": "youtube",
+      "checkedOn": null,
+      "text": {
+        "maxGraphemes": 5000,
+        "titleMaxGraphemes": 100
+      },
+      "hashtags": {
+        "max": 3
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "16:9"
+          ],
+          "maxBytes": 2097152,
+          "maxPerPost": 1,
+          "altTextRequired": false
+        },
+        "video": {
+          "aspects": [
+            "9:16",
+            "16:9"
+          ],
+          "maxSeconds": 180,
+          "maxBytes": 137438953472
+        }
+      },
+      "automation": {
+        "mode": "api-allowed",
+        "note": "Official Data API with the channel owner's OAuth consent. API upload quota is per project; each upload costs 1600 units of a default 10000 a day."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": true,
+        "mechanism": "api-field",
+        "apiField": "status.containsSyntheticMedia",
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 2,
+          "minGapMinutes": 240
+        },
+        "perPlatform": {
+          "perDay": 6
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "startHour": 9,
+          "endHour": 21
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 90
+      },
+      "linkBack": "optional",
+      "cadence": {
+        "targetPerDay": 1
+      }
+    },
+    "linkedin": {
+      "platform": "linkedin",
+      "checkedOn": null,
+      "text": {
+        "maxGraphemes": 3000
+      },
+      "hashtags": {
+        "max": 3
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "1:1",
+            "4:5",
+            "16:9"
+          ],
+          "maxBytes": 8388608,
+          "maxPerPost": 9,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [
+            "9:16",
+            "1:1",
+            "16:9"
+          ],
+          "maxSeconds": 600,
+          "maxBytes": 5368709120
+        }
+      },
+      "automation": {
+        "mode": "api-allowed",
+        "note": "Only organization-page posting through an approved Community Management API app; no member-account automation, no scraping."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": false,
+        "mechanism": "text-label",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 1,
+          "minGapMinutes": 720
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            2,
+            3,
+            4
+          ],
+          "startHour": 8,
+          "endHour": 11
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 60
+      },
+      "linkBack": "required",
+      "cadence": {
+        "targetPerDay": 1
+      }
+    },
+    "facebook-page": {
+      "platform": "facebook-page",
+      "checkedOn": null,
+      "text": {
+        "maxGraphemes": 5000
+      },
+      "hashtags": {
+        "max": 3
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "1:1",
+            "4:5",
+            "16:9"
+          ],
+          "maxBytes": 8388608,
+          "maxPerPost": 10,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [
+            "9:16",
+            "1:1",
+            "16:9"
+          ],
+          "maxSeconds": 90,
+          "maxBytes": 4294967296
+        }
+      },
+      "automation": {
+        "mode": "api-allowed",
+        "note": "Page posting through Graph API with a Page token the owner holds."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": true,
+        "mechanism": "platform-ui-label",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 2,
+          "minGapMinutes": 240
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "startHour": 9,
+          "endHour": 19
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 60
+      },
+      "linkBack": "required",
+      "cadence": {
+        "targetPerDay": 1
+      }
+    },
+    "instagram": {
+      "platform": "instagram",
+      "checkedOn": null,
+      "text": {
+        "maxGraphemes": 2200
+      },
+      "hashtags": {
+        "max": 5
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "1:1",
+            "4:5"
+          ],
+          "maxBytes": 8388608,
+          "maxPerPost": 10,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [
+            "9:16"
+          ],
+          "maxSeconds": 90,
+          "maxBytes": 1073741824
+        }
+      },
+      "automation": {
+        "mode": "api-allowed",
+        "note": "Content Publishing API for professional accounts linked to a Page; links in captions are not clickable."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": true,
+        "mechanism": "platform-ui-label",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 2,
+          "minGapMinutes": 240
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "startHour": 10,
+          "endHour": 21
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 60
+      },
+      "linkBack": "optional",
+      "cadence": {
+        "targetPerDay": 1
+      }
+    },
+    "tiktok": {
+      "platform": "tiktok",
+      "checkedOn": null,
+      "text": {
+        "maxGraphemes": 2200
+      },
+      "hashtags": {
+        "max": 5
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "9:16"
+          ],
+          "maxBytes": 20971520,
+          "maxPerPost": 35,
+          "altTextRequired": false
+        },
+        "video": {
+          "aspects": [
+            "9:16"
+          ],
+          "maxSeconds": 600,
+          "maxBytes": 4294967296
+        }
+      },
+      "automation": {
+        "mode": "manual-only",
+        "note": "The Content Posting API needs an audited app; until audited, API posts are private-only. Post by hand from the account."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": true,
+        "mechanism": "api-field",
+        "apiField": "post_info.is_aigc",
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 2,
+          "minGapMinutes": 240
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "startHour": 12,
+          "endHour": 22
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 60
+      },
+      "linkBack": "optional",
+      "cadence": {
+        "targetPerDay": 1
+      }
+    },
+    "x": {
+      "platform": "x",
+      "checkedOn": null,
+      "text": {
+        "maxGraphemes": 280
+      },
+      "hashtags": {
+        "max": 2
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "1:1",
+            "16:9"
+          ],
+          "maxBytes": 5242880,
+          "maxPerPost": 4,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [
+            "9:16",
+            "1:1",
+            "16:9"
+          ],
+          "maxSeconds": 140,
+          "maxBytes": 536870912
+        }
+      },
+      "automation": {
+        "mode": "api-allowed-bot-disclosed",
+        "note": "Automated accounts carry the Automated label; the API is a paid tier."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": false,
+        "mechanism": "text-label",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 4,
+          "minGapMinutes": 120
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "startHour": 8,
+          "endHour": 20
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 30
+      },
+      "linkBack": "required",
+      "cadence": {
+        "targetPerDay": 2
+      }
+    },
+    "reddit": {
+      "platform": "reddit",
+      "checkedOn": null,
+      "text": {
+        "maxGraphemes": 300,
+        "titleMaxGraphemes": 300
+      },
+      "hashtags": {
+        "max": 0
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "1:1",
+            "4:5",
+            "16:9"
+          ],
+          "maxBytes": 20971520,
+          "maxPerPost": 20,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [
+            "9:16",
+            "16:9"
+          ],
+          "maxSeconds": 900,
+          "maxBytes": 1073741824
+        }
+      },
+      "automation": {
+        "mode": "manual-only",
+        "note": "Each subreddit has its own self-promotion rules; read them and post by hand. No automated submission, no cross-posting the same item across subreddits at once."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": false,
+        "mechanism": "text-label",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 1,
+          "minGapMinutes": 5760
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "startHour": 9,
+          "endHour": 12
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 365
+      },
+      "linkBack": "optional",
+      "cadence": {
+        "targetPerDay": 1
+      }
+    },
+    "hackernews": {
+      "platform": "hackernews",
+      "checkedOn": null,
+      "text": {
+        "maxGraphemes": 2000,
+        "titleMaxGraphemes": 80,
+        "linkOnly": true
+      },
+      "hashtags": {
+        "max": 0
+      },
+      "media": {
+        "image": {
+          "aspects": [],
+          "maxBytes": 0,
+          "maxPerPost": 0,
+          "altTextRequired": false
+        },
+        "video": {
+          "aspects": [],
+          "maxSeconds": 0,
+          "maxBytes": 0
+        }
+      },
+      "automation": {
+        "mode": "manual-only",
+        "note": "Submissions are made by a person; no voting rings, no solicitation of votes. Show HN needs something people can try."
+      },
+      "aiDisclosure": {
+        "required": false,
+        "offered": false,
+        "mechanism": "none",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 1,
+          "minGapMinutes": 10080
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            2,
+            3,
+            4
+          ],
+          "startHour": 8,
+          "endHour": 11
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 365
+      },
+      "linkBack": "required",
+      "cadence": {
+        "targetPerDay": 1
+      }
+    },
+    "devto": {
+      "platform": "devto",
+      "checkedOn": null,
+      "text": {
+        "maxGraphemes": 20000,
+        "titleMaxGraphemes": 128
+      },
+      "hashtags": {
+        "max": 4
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "16:9"
+          ],
+          "maxBytes": 5242880,
+          "maxPerPost": 10,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [],
+          "maxSeconds": 0,
+          "maxBytes": 0
+        }
+      },
+      "automation": {
+        "mode": "api-allowed",
+        "note": "Articles by API with canonical_url set to the house page."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": false,
+        "mechanism": "text-label",
+        "apiField": null,
+        "textLabel": "AI-assisted article"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 1,
+          "minGapMinutes": 4320
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "startHour": 8,
+          "endHour": 12
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 365
+      },
+      "linkBack": "required",
+      "cadence": {
+        "targetPerDay": 1
+      }
+    },
+    "discord": {
+      "platform": "discord",
+      "checkedOn": null,
+      "text": {
+        "maxGraphemes": 2000
+      },
+      "hashtags": {
+        "max": 0
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "1:1",
+            "16:9"
+          ],
+          "maxBytes": 10485760,
+          "maxPerPost": 10,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [
+            "9:16",
+            "16:9"
+          ],
+          "maxSeconds": 600,
+          "maxBytes": 10485760
+        }
+      },
+      "automation": {
+        "mode": "api-allowed-bot-disclosed",
+        "note": "A bot application in a guild the house runs; the bot is visibly a bot."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": false,
+        "mechanism": "text-label",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 3,
+          "minGapMinutes": 180
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "startHour": 10,
+          "endHour": 21
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 14
+      },
+      "linkBack": "optional",
+      "cadence": {
+        "targetPerDay": 1
+      }
+    },
+    "newsletter": {
+      "platform": "newsletter",
+      "checkedOn": null,
+      "text": {
+        "maxGraphemes": 20000,
+        "titleMaxGraphemes": 120
+      },
+      "hashtags": {
+        "max": 0
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "16:9",
+            "1:1"
+          ],
+          "maxBytes": 1048576,
+          "maxPerPost": 6,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [],
+          "maxSeconds": 0,
+          "maxBytes": 0
+        }
+      },
+      "automation": {
+        "mode": "api-allowed",
+        "note": "Opt-in subscribers only; one-click unsubscribe and a postal identity in every send. No list purchase, no scraped addresses."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": false,
+        "mechanism": "text-label",
+        "apiField": null,
+        "textLabel": "AI-assisted summary"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 1,
+          "minGapMinutes": 10080
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            2,
+            4
+          ],
+          "startHour": 7,
+          "endHour": 10
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 365
+      },
+      "linkBack": "required",
+      "cadence": {
+        "targetPerDay": 1
+      }
+    },
+    "website": {
+      "platform": "website",
+      "checkedOn": null,
+      "text": {
+        "maxGraphemes": 100000,
+        "titleMaxGraphemes": 120
+      },
+      "hashtags": {
+        "max": 0
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "1:1",
+            "4:5",
+            "16:9",
+            "9:16"
+          ],
+          "maxBytes": 10485760,
+          "maxPerPost": 50,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [
+            "9:16",
+            "16:9",
+            "1:1"
+          ],
+          "maxSeconds": 3600,
+          "maxBytes": 1073741824
+        }
+      },
+      "automation": {
+        "mode": "api-allowed",
+        "note": "The house's own sites (*.561.group, koios.news): static publication plus RSS/Atom/JSON Feed through web-syndication."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": false,
+        "mechanism": "text-label",
+        "apiField": null,
+        "textLabel": "AI-generated media"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 4,
+          "perDay": 12,
+          "minGapMinutes": 15
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "startHour": 0,
+          "endHour": 24
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 0
+      },
+      "linkBack": "optional",
+      "cadence": {
+        "targetPerDay": 4
+      }
+    },
+    "hive": {
+      "platform": "hive",
+      "checkedOn": null,
+      "text": {
+        "maxGraphemes": 60000,
+        "titleMaxGraphemes": 255
+      },
+      "hashtags": {
+        "max": 5
+      },
+      "media": {
+        "image": {
+          "aspects": [
+            "1:1",
+            "4:5",
+            "16:9"
+          ],
+          "maxBytes": 10485760,
+          "maxPerPost": 10,
+          "altTextRequired": true
+        },
+        "video": {
+          "aspects": [],
+          "maxSeconds": 0,
+          "maxBytes": 0
+        }
+      },
+      "automation": {
+        "mode": "api-allowed",
+        "note": "Posts are signed with the account's posting key and are public and permanent; an edit leaves history. One root post per account per five minutes is a protocol rule; the house posts far less. Author rewards make AI-generated spam a reputational risk: post only what is useful."
+      },
+      "aiDisclosure": {
+        "required": true,
+        "offered": false,
+        "mechanism": "text-label",
+        "apiField": null,
+        "textLabel": "AI-assisted article"
+      },
+      "limits": {
+        "perAccount": {
+          "perHour": 1,
+          "perDay": 1,
+          "minGapMinutes": 720
+        }
+      },
+      "windows": [
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "startHour": 8,
+          "endHour": 22
+        }
+      ],
+      "duplicates": {
+        "blockSameTextWithinDays": 365
+      },
+      "linkBack": "required",
+      "cadence": {
+        "targetPerDay": 1
+      }
+    }
+  }
+}

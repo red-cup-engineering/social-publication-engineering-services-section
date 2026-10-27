@@ -10,22 +10,31 @@
     "./campaign-intents": "./src/campaign-intents.mjs",
     "./community-evidence": "./src/community-evidence.mjs",
     "./schemas/community-observations": "./schemas/community-observations.schema.json",
-    "./schemas/community-requirements": "./schemas/community-requirements.schema.json"
+    "./schemas/community-requirements": "./schemas/community-requirements.schema.json",
+    "./syndication": "./src/syndication/index.mjs",
+    "./syndicate": "./apps/syndicate.mjs",
+    "./platform-rules.seed": "./content/platform-rules.seed.json",
+    "./platform-rules.verified": "./content/platform-rules.verified.json",
+    "./editorial-phrases": "./content/editorial/phrases.json",
+    "./brand-presence": "./apps/brand-presence.mjs"
   },
   "files": [
     "src",
     "apps",
     "schemas",
     "docs",
-    "README.md"
+    "README.md",
+    "content"
   ],
   "scripts": {
-    "check": "node --check src/index.mjs && node --check test/index.test.mjs && node --check src/audience-routes.mjs && node --check apps/audience-brief.mjs && node --check test/audience-routes.test.mjs && node --check src/campaign-intents.mjs && node --check apps/compile-campaign-intents.mjs && node --check test/campaign-intents.test.mjs && node --check src/community-evidence.mjs && node --check test/community-evidence.test.mjs",
+    "check": "node --check src/index.mjs && node --check test/index.test.mjs && node --check src/audience-routes.mjs && node --check apps/audience-brief.mjs && node --check test/audience-routes.test.mjs && node --check src/campaign-intents.mjs && node --check apps/compile-campaign-intents.mjs && node --check test/campaign-intents.test.mjs && node --check src/community-evidence.mjs && node --check test/community-evidence.test.mjs && node --check src/syndication/index.mjs && node --check apps/syndicate.mjs && node --check test/syndication.test.mjs && node --check src/syndication/sources.mjs && node --check test/syndication-sources.test.mjs && node --check test/syndication-copy.test.mjs && node --check src/syndication/editorial.mjs && node --check src/syndication/post-provenance.mjs && node --check src/syndication/handles.mjs && node --check src/syndication/rules-evidence.mjs && node --check apps/brand-presence.mjs && node --check test/brand-presence.test.mjs && node --check src/syndication/profile-readback.mjs && node --check test/profile-readback.test.mjs && node --check test/profile-readback-cli.test.mjs",
     "test": "node --test test/*.test.mjs",
     "verify": "npm run check && npm test",
     "prepublishOnly": "npm run verify",
     "audience:brief": "node apps/audience-brief.mjs",
-    "campaign:intents": "node apps/compile-campaign-intents.mjs"
+    "campaign:intents": "node apps/compile-campaign-intents.mjs",
+    "syndicate": "node apps/syndicate.mjs",
+    "brand-presence": "node apps/brand-presence.mjs"
   },
   "engines": {
     "node": ">=22.18"
