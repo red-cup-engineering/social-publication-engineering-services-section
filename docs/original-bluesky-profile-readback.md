@@ -93,7 +93,7 @@ may independently assay the provider, issue a source-authored change record
 and later authorize an original Work/obligation discharge.
 
 Run `npm run verify` from the original social-publication PR branch.
-`test/profile-readback.test.mjs` covers 15 pure source, hash, DID, network,
+`test/profile-readback.test.mjs` covers 16 pure source, hash, DID, network,
 privacy, bounded stream and refusal cases; `test/profile-readback-cli.test.mjs`
 adds 5 actual forked CLI invocation and source-data-minimization tests. Both
 use fake provider responses and no network/billing. Public GitHub Actions
