@@ -34,7 +34,8 @@
     "audience:brief": "node apps/audience-brief.mjs",
     "campaign:intents": "node apps/compile-campaign-intents.mjs",
     "syndicate": "node apps/syndicate.mjs",
-    "brand-presence": "node apps/brand-presence.mjs"
+    "brand-presence": "node apps/brand-presence.mjs",
+    "test:public-source": "node --test test/audience-routes.test.mjs test/brand-presence.test.mjs test/campaign-intents.test.mjs test/index.test.mjs test/profile-readback-cli.test.mjs test/profile-readback.test.mjs test/syndication-copy.test.mjs test/syndication-sources.test.mjs test/syndication.test.mjs"
   },
   "engines": {
     "node": ">=22.18"
