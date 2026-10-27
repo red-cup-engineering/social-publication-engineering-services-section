@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:561:social:community-observations:1",
+  "title": "Provider-neutral forge and social community observations",
+  "$comment": "The interpreter additionally checks finite acyclic JSON, subject agreement, normalized chronology and canonical SignCell carrier admission. Schema format annotations alone do not authenticate a source.",
+  "type": "object",
+  "required": ["kind", "subject", "observedAt", "observations", "effects"],
+  "additionalProperties": false,
+  "properties": {
+    "kind": {"const": "forge.community-observations.v1"},
+    "subject": {"type": "string", "minLength": 1, "maxLength": 512},
+    "observedAt": {"type": "string", "format": "date-time"},
+    "observations": {"type": "array", "maxItems": 512, "items": {"$ref": "#/$defs/observation"}},
+    "effects": {"type": "array", "maxItems": 0}
+  },
+  "$defs": {
+    "coverage": {
+      "type": "object", "required": ["complete", "scope"], "additionalProperties": false,
+      "properties": {"complete": {"type": "boolean"}, "scope": {"type": "string", "minLength": 1, "maxLength": 512}, "reason": {"type": "string", "minLength": 1, "maxLength": 2000}}
+    },
+    "source": {
+      "type": "object", "required": ["url", "observedAt", "provider", "coverage"], "additionalProperties": false,
+      "properties": {
+        "url": {"type": "string", "format": "uri", "pattern": "^https://", "maxLength": 4096},
+        "observedAt": {"type": "string", "format": "date-time"},
+        "validatedAt": {"type": "string", "format": "date-time"},
+        "provider": {"type": "string", "minLength": 1, "maxLength": 80},
+        "repositoryId": {"oneOf": [{"type": "string", "minLength": 1}, {"type": "integer", "minimum": 1}]},
+        "repository": {"type": "string", "minLength": 1, "maxLength": 512},
+        "visibility": {"enum": ["public", "private", "internal"]},
+        "coverage": {"$ref": "#/$defs/coverage"},
+        "pages": {"type": "array", "maxItems": 32, "items": {
+          "type": "object", "required": ["url", "observedAt"], "additionalProperties": false,
+          "properties": {
+            "url": {"type": "string", "format": "uri", "pattern": "^https://", "maxLength": 4096},
+            "observedAt": {"type": "string", "format": "date-time"},
+            "validatedAt": {"type": "string", "format": "date-time"}
+          }
+        }}
+      }
+    },
+    "observation": {
+      "type": "object", "required": ["subject", "predicate", "status", "source"], "additionalProperties": false,
+      "properties": {
+        "subject": {"type": "string", "minLength": 1, "maxLength": 512},
+        "predicate": {"type": "string", "minLength": 1, "maxLength": 512},
+        "value": true,
+        "status": {"enum": ["observed", "unknown"]},
+        "stance": {"enum": ["for", "against"]},
+        "source": {"$ref": "#/$defs/source"},
+        "reason": {"type": "string", "minLength": 1, "maxLength": 2000}
+      },
+      "allOf": [
+        {"if": {"properties": {"status": {"const": "observed"}}}, "then": {"required": ["value"]}},
+        {"if": {"properties": {"status": {"const": "unknown"}}}, "then": {"required": ["reason"], "properties": {"value": {"type": "null"}}}}
+      ]
+    }
+  }
+}

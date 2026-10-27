@@ -1,21 +1,29 @@
 {
   "name": "@red-cup-engineering/social-publication-services-section",
-  "version": "0.2.0",
-  "private": true,
+  "version": "0.3.0-dev.0",
+  "private": false,
   "type": "module",
   "description": "Credential-blind, provider-neutral social publication mechanics with ni-addressed intents and receipts.",
   "exports": {
     ".": "./src/index.mjs",
     "./audience-routes": "./src/audience-routes.mjs",
-    "./campaign-intents": "./src/campaign-intents.mjs"
+    "./campaign-intents": "./src/campaign-intents.mjs",
+    "./community-evidence": "./src/community-evidence.mjs",
+    "./schemas/community-observations": "./schemas/community-observations.schema.json",
+    "./schemas/community-requirements": "./schemas/community-requirements.schema.json"
   },
   "files": [
-    "src"
+    "src",
+    "apps",
+    "schemas",
+    "docs",
+    "README.md"
   ],
   "scripts": {
-    "check": "node --check src/index.mjs && node --check test/index.test.mjs && node --check src/audience-routes.mjs && node --check apps/audience-brief.mjs && node --check test/audience-routes.test.mjs && node --check src/campaign-intents.mjs && node --check apps/compile-campaign-intents.mjs && node --check test/campaign-intents.test.mjs",
+    "check": "node --check src/index.mjs && node --check test/index.test.mjs && node --check src/audience-routes.mjs && node --check apps/audience-brief.mjs && node --check test/audience-routes.test.mjs && node --check src/campaign-intents.mjs && node --check apps/compile-campaign-intents.mjs && node --check test/campaign-intents.test.mjs && node --check src/community-evidence.mjs && node --check test/community-evidence.test.mjs",
     "test": "node --test test/*.test.mjs",
     "verify": "npm run check && npm test",
+    "prepublishOnly": "npm run verify",
     "audience:brief": "node apps/audience-brief.mjs",
     "campaign:intents": "node apps/compile-campaign-intents.mjs"
   },
@@ -38,5 +46,12 @@
   "funding": {
     "type": "individual",
     "url": "https://github.com/561-group/.github/blob/main/TIPS.md"
+  },
+  "dependencies": {
+    "@red-cup-engineering/signcraft": "0.6.1-dev.508"
+  },
+  "publishConfig": {
+    "registry": "https://registry.561.group/",
+    "tag": "next"
   }
 }

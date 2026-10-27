@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:561:social:community-requirements:1",
+  "title": "Atomic evidence-grounded community requirements",
+  "$comment": "Requirements are caller-authored obligations. A reading establishes only what the supplied sources support or oppose. The interpreter also enforces unique ids, target subject and finite JSON operands.",
+  "type": "array", "maxItems": 64,
+  "items": {
+    "type": "object", "required": ["id", "title", "subject", "predicate", "operator", "action"], "additionalProperties": false,
+    "properties": {
+      "id": {"type": "string", "minLength": 1, "maxLength": 512},
+      "title": {"type": "string", "minLength": 1, "maxLength": 512},
+      "subject": {"type": "string", "minLength": 1, "maxLength": 512},
+      "predicate": {"type": "string", "minLength": 1, "maxLength": 512},
+      "operator": {"enum": ["equals", "at-least", "includes", "nonempty"]},
+      "expected": true,
+      "priority": {"type": "integer", "minimum": 0, "maximum": 100},
+      "action": {
+        "type": "object", "required": ["kind", "description"], "additionalProperties": false,
+        "properties": {"kind": {"type": "string", "minLength": 1, "maxLength": 80}, "description": {"type": "string", "minLength": 1, "maxLength": 2000}}
+      },
+      "sourceUrls": {"type": "array", "maxItems": 32, "items": {"type": "string", "format": "uri", "pattern": "^https://", "maxLength": 4096}},
+      "sourceContract": {
+        "type": "object", "required": ["kind", "path", "role"], "additionalProperties": false,
+        "properties": {
+          "kind": {"const": "repository-file"},
+          "path": {"type": "string", "minLength": 1, "maxLength": 512},
+          "role": {"enum": ["documentation", "runtime-schema", "source-code", "configuration"]}
+        }
+      }
+    },
+    "allOf": [
+      {"if": {"properties": {"operator": {"const": "nonempty"}}}, "then": {"not": {"required": ["expected"]}}, "else": {"required": ["expected"]}},
+      {"if": {"properties": {"operator": {"const": "at-least"}}}, "then": {"properties": {"expected": {"type": "number"}}}}
+    ]
+  }
+}

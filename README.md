@@ -68,3 +68,35 @@ Call `node apps/audience-brief.mjs /path/to/corporate-source.json --markdown` to
 
 `node apps/compile-campaign-intents.mjs SOURCE.json --json` produces typed candidates, or `--markdown` a reviewer-friendly pack. Publishing still belongs to the customer account through `publishBlueskyPost`, `publishFacebookPagePost`, `publishLinkedInPost`, or a separately installed native Fediverse publisher, and requires its actual editorial and transport permission. The Group corporate Marketing consumer remains downstream. Tests exercise provenance, duplicate, invalid and overlong content refusals, and deterministic native intent construction.
 
+## Community evidence and requirements
+
+The `./community-evidence` export interprets bounded, provider-neutral observation
+batches through the actual `@red-cup-engineering/signcraft/cell` owner. Source
+observations, requirements, evaluations and action candidates are native Cells
+with canonical addresses and retained provenance. The four evidence readings
+remain distinct: `unknown`, `held`, `denied` and `contested`.
+
+`communityEvidence(batch)` admits observations and their source coverage;
+`assessCommunityRequirements({batch, requirements, previous})` derives supported
+requirements and deterministic recommendations;
+`compareCommunityAssessments(previous, next)` preserves snapshot and requirement
+changes. `defaultForgeCommunityRequirements(subject)` supplies readiness
+requirements for description, topics, README, license and contribution guidance.
+Partial samples can establish an observed positive example but cannot establish
+absence or a total. Release announcement candidates require affirmative
+publication state and a publication instant no later than the snapshot.
+
+These pure operations produce source evidence and proposed work. GitHub and
+other platform owners collect observations and perform authorized transport.
+The Software Forge consumer can admit an unmet source requirement as a work
+order while preserving the same requirement and evidence identities. JSON Schema
+2020-12 contracts and the semantic admission rules are documented in
+[the operation contract](docs/community-evidence.md).
+
+The source package declares `0.3.0-dev.0`, pins SignCraft `0.6.1-dev.508`, and is
+configured for `registry.561.group` under the non-default `next` tag. Native
+source qualification exercises the authentic pinned SignCraft supplier and
+existing publication tests. Source availability and these checks do not assert
+registry publication, an installed consumer, an external publication or a
+community outcome; those require their own observed receipts.
+
