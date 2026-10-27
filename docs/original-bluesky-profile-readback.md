@@ -26,10 +26,11 @@ operator-only handoff to change it. In that branch:
   admits it as source-only instructions but **still needs** an authentic
   installed Group source provider and independently verified completion.
 
-The source record currently pins
-`@561.group (did:plc:wpmzbzu62jkeapaptmv7lr5i)`; its selected text has
-NI `ni:///sha-256;hn4Z9c7UoLqoZQeNy9ExHLd5OYFmFPajQn1fAXr3Q-g`.
-This file uses that exact original Group source; it does **not** re-author a
+The original Group source records carry the exact DID, prior and selected
+public-copy content addresses, approved words and evidence. The public
+Engineering repository neither duplicates those private source bytes nor
+selects them from its own test fixtures; it reads the owner-authorized record
+when the recipient explicitly invokes the CLI. It does **not** re-author a
 profile, embed a password or decide what the public description should say.
 
 ## Execute original read-only receiver
