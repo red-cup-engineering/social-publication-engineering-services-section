@@ -4,7 +4,7 @@
  * prior observation and content address. Public Bluesky AppView is a source
  * observation ONLY. No login, posting, receipt/discharge, Work or credential.
  */
-import { createHash } from 'node:crypto';
+import { niOfBytes } from './canonical.mjs';
 
 export const BLUESKY_PUBLIC_PROFILE_ENDPOINT = 'https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile';
 export const PROFILE_READBACK_MAX_BYTES = 32_768;
@@ -18,7 +18,7 @@ const publicSource = actor => BLUESKY_PUBLIC_PROFILE_ENDPOINT + '?actor=' + enco
 export function profileCopyNi(value) {
   if (typeof value !== 'string' || !value.isWellFormed() || value.length > 4096)
     throw new TypeError('Profile text must be bounded, well-formed Unicode');
-  return 'ni:///sha-256;' + createHash('sha256').update(value, 'utf8').digest('base64url');
+  return niOfBytes(Buffer.from(value, 'utf8'));
 }
 
 /** Consume the original Group public-copy record, not a query-selected quote. */
