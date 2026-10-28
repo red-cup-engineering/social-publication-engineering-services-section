@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { publicationIntent, publicationReceipt } from '../src/index.mjs';
+import { blueskyAdapter } from '../src/syndication/adapters.mjs';
 import {
   BLUESKY_PUBLIC_POST_ENDPOINT,
   BLUESKY_POST_READBACK_MAX_BYTES,
@@ -30,6 +31,27 @@ const json = (posts, status = 200) => new Response(JSON.stringify({posts}), {
 });
 const read = (posts, options = {}) => readBlueskyPostReceipt(expected, {
   observedAt:now, fetchImpl:async () => json(posts), ...options,
+});
+
+test('the existing credential-blind Bluesky adapter carries the submitted CID to its caller', async () => {
+  let called = 0;
+  const receipt = await blueskyAdapter().publish({
+    link: canonical, text: intent.text, title: 'Verified release', media: [], language: 'en',
+  }, {
+    account: {did, handle:'561-group.bsky.social'},
+    authorizedFetch: async (url, init) => {
+      called++;
+      assert.match(url, /com\.atproto\.repo\.createRecord$/u);
+      assert.equal(init.headers.authorization, undefined);
+      return new Response(JSON.stringify({uri, cid}), {
+        status:200, headers:{'content-type':'application/json'},
+      });
+    },
+  });
+  assert.equal(called,1);
+  assert.equal(receipt.externalId,uri);
+  assert.equal(receipt.cid,cid);
+  assert.match(receipt.url,/bsky\.app\/profile\//u);
 });
 
 test('the expectation is source-, receipt-, author- and CID-bound before the network', async () => {
