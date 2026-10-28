@@ -18,7 +18,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   admitAccountRegistry, admitContentItem, admitPlatformRuleSet, automationAdmission, blueskyAdapter, dryRunAdapter, gateRendition,
-  manualPacket, niOfBytes, niOfJson, planSchedule, readBlueskyJournalPost, renditionsFor, ruleFor, runDue, summarize, verifyManifest,
+  manualPacket, niOfBytes, niOfJson, planSchedule, readBlueskyJournalPost, renditionsFor, reserveSocialEffectInJournal, ruleFor, runDue, summarize, verifyManifest,
 } from '../src/syndication/index.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -101,7 +101,8 @@ export async function due(opts) {
   for (const account of registry.accounts) adapters[account.platform] = dryRunAdapter(account.platform);
   if (live) adapters.bluesky = blueskyAdapter({ loadBytes: async () => { throw new Error('image bytes loader not configured'); } });
   const resolvers = { env: (name) => { const value = process.env[name]; if (!value) throw new Error(`environment credential ${name} is not set`); return (url, init = {}) => fetch(url, { ...init, headers: { ...(init.headers ?? {}), authorization: `Bearer ${value}` } }); } };
-  const outcome = await runDue({ entries, renditions, registry, ruleSet, adapters, resolvers, journal: readJsonl(journalPath), nowMs: Date.parse(need(opts, 'now')), live });
+  const outcome = await runDue({ entries, renditions, registry, ruleSet, adapters, resolvers, journal: readJsonl(journalPath), nowMs: Date.parse(need(opts, 'now')), live,
+    reserveEffect: reserveSocialEffectInJournal(journalPath) });
   for (const line of outcome.journal) appendFileSync(journalPath, `${JSON.stringify(line)}\n`);
   return { live, perAccount: outcome.perAccount, results: outcome.results.map(({ accountId, renditionId, status, reason }) => ({ accountId, renditionId, status, reason })) };
 }
