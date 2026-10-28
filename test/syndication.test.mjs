@@ -207,12 +207,20 @@ test('schedule continues from the journal rather than restarting', () => {
   assert.equal(limitCheck(registry.accounts[0], rule, [{ accountId: 'a@bluesky', status: 'posted', at: '2026-10-26T14:30:00Z' }], Date.parse('2026-10-26T15:00:00Z')).ok, false);
 });
 
-async function cycle({ accounts, adapters, live = false, journal = [], resolvers }) {
+const sourceReleaseFixture = niOfBytes(Buffer.from('source-authorized-release-fixture'));
+const qualifiedSourceFixture = ({ canonicalUrl, itemNi, sourceNi, nowMs }) => ({
+  type: 'SocialSourceReadback', version: 1, canonicalUrl, itemNi, sourceNi,
+  publicationStatus: 'stable', publiclyReadable: true,
+  releaseRef: sourceReleaseFixture, observedAt: new Date(nowMs).toISOString(),
+  claims: [],
+});
+async function cycle({ accounts, adapters, live = false, journal = [], resolvers,
+  readCurrentSource = qualifiedSourceFixture, contentItem = item(60) }) {
   const registry = registryOf(...accounts);
-  const renditions = [item(60)].flatMap((entry) => renditionsFor(entry, { accounts: registry.accounts, ruleSet }));
+  const renditions = [contentItem].flatMap((entry) => renditionsFor(entry, { accounts: registry.accounts, ruleSet }));
   const plan = planSchedule({ renditions, registry, ruleSet, startMs: Date.parse('2026-10-26T00:00:00Z'), days: 2 });
   // Tuesday 10:30 in Chicago: inside every seed window used below, after every first slot.
-  return runDue({ entries: plan.entries, renditions: new Map(renditions.map((r) => [r.id, r])), registry, ruleSet, adapters, resolvers, journal, nowMs: Date.parse('2026-10-27T15:30:00Z'), live });
+  return runDue({ entries: plan.entries, renditions: new Map(renditions.map((r) => [r.id, r])), registry, ruleSet, adapters, resolvers, journal, nowMs: Date.parse('2026-10-27T15:30:00Z'), live, readCurrentSource });
 }
 const okFetch = () => async () => ({});
 const adapterThat = (platform, behaviour) => ({ platform, live: true, validate: () => ({ ok: true, problems: [] }), publish: behaviour });
