@@ -116,6 +116,7 @@ export async function runDue({ entries, renditions, registry, ruleSet, adapters,
       try {
         const receipt = await adapter.publish(rendition, { account, authorizedFetch: capability });
         record('posted', { externalId: receipt.externalId, url: receipt.url ?? null,
+          ...(account.platform === 'bluesky' && typeof receipt.cid === 'string' ? { externalCid: receipt.cid } : {}),
           sourceNi: sourceWitness.sourceNi, releaseRef: sourceWitness.releaseRef,
           sourceObservedAt: sourceWitness.observedAt, sourceClaimsChecked: sourceWitness.claimsChecked });
         published += 1;
