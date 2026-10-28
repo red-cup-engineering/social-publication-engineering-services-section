@@ -158,6 +158,9 @@ export async function runDue({ entries, renditions, registry, ruleSet, adapters,
         // error or no response. The durable pre-effect reservation survives
         // process death, and no status below schedules another write.
         const status = Number(error?.status ?? 0);
+        if (status === 401 || status === 403) {
+          out.hold = 'provider-account-authorization-refused-and-effect-outcome-unverified';
+        }
         record('outcome-unknown', { effectId: effect.id,
           reason: 'provider-outcome-unverified-needs-independent-reconciliation',
           providerStatusClass: Number.isInteger(status) && status >= 100 && status <= 599 ?
