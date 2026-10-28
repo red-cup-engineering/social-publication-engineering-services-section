@@ -176,6 +176,36 @@ The brand/account thread's inputs to the syndication engine, in the interfaces a
 `ContentItem` is extended with optional `claims`, `sources`, `ai` and `authoring` (a `PostCandidateSet` in the CLI header). The extension does not change `renditionsFor`.
 
 
+## Durable pre-effect boundary and ambiguous outcomes
+
+The original `runDue` no longer retries a post merely because a platform
+returns a 5xx, 429 or network error. A remote write may already have been
+accepted even when the response was lost. All **live** adapters now require
+the original publisher's fresh `readCurrentSource` and the host's unique,
+**durable** `reserveEffect` before the network write. The reservation is
+a deterministic NI over account, rendition/bytes, independently received
+source release, and scheduled slot. Missing authority or a missing/failed
+durable reservation holds the item without posting. An ambiguous transport
+result is `outcome-unknown`, never a blind retry.
+
+For a single local authoritative Node host, `reserveSocialEffectInJournal(path)`
+holds an exclusive file lock while it rereads the **original journal** and
+fsyncs an `effect-reserved` entry before allowing the adapter to proceed.
+The existing CLI passes this port to `runDue`; its standalone `due --live`
+still cannot post without the original trusted source reader. A crash leaves
+the effect or lock held for independent investigation; never auto-clear a
+lock on age alone. A distributed host must provide its *own* atomic reserve-
+if-unused operation over its actual authoritative journal, not copy this local
+file mechanism between nodes.
+
+This is a **fail-closed safety mechanism**, not automatic reconciliation or
+exactly-once distributed transport. See [the original durable effect and
+unknown-outcome runbook](docs/durable-social-effect-and-unknown-outcome.md)
+for source/correction receiving, legitimate new attempts and PDS readback.
+The public CI now covers the exact crash, lock, historical retry and
+cross-account cases plus the original temporal source-currentness tests;
+private SignCraft and live platform receiving remain separate.
+
 ## Exact Bluesky transport and public readback
 
 The original Bluesky adapter now retains the provider's AT URI and CID,
