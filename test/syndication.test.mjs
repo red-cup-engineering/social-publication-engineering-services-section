@@ -215,12 +215,13 @@ const qualifiedSourceFixture = ({ canonicalUrl, itemNi, sourceNi, nowMs }) => ({
   claims: [],
 });
 async function cycle({ accounts, adapters, live = false, journal = [], resolvers,
-  readCurrentSource = qualifiedSourceFixture, contentItem = item(60) }) {
+  readCurrentSource = qualifiedSourceFixture, contentItem = item(60),
+  reserveEffect = async (attempt) => ({ reserved: true, effectId: attempt.id }) }) {
   const registry = registryOf(...accounts);
   const renditions = [contentItem].flatMap((entry) => renditionsFor(entry, { accounts: registry.accounts, ruleSet }));
   const plan = planSchedule({ renditions, registry, ruleSet, startMs: Date.parse('2026-10-26T00:00:00Z'), days: 2 });
   // Tuesday 10:30 in Chicago: inside every seed window used below, after every first slot.
-  return runDue({ entries: plan.entries, renditions: new Map(renditions.map((r) => [r.id, r])), registry, ruleSet, adapters, resolvers, journal, nowMs: Date.parse('2026-10-27T15:30:00Z'), live, readCurrentSource });
+  return runDue({ entries: plan.entries, renditions: new Map(renditions.map((r) => [r.id, r])), registry, ruleSet, adapters, resolvers, journal, nowMs: Date.parse('2026-10-27T15:30:00Z'), live, readCurrentSource, reserveEffect });
 }
 const okFetch = () => async () => ({});
 const adapterThat = (platform, behaviour) => ({ platform, live: true, validate: () => ({ ok: true, problems: [] }), publish: behaviour });
@@ -249,8 +250,8 @@ test('publish: live needs the owner approval, and a failing account never blocks
   const outcome = await cycle({ accounts, adapters, live: true, resolvers });
   const status = (id) => outcome.results.filter((line) => line.accountId === id).map((line) => line.status);
   assert.deepEqual(status('ok@bluesky'), ['posted']);
-  assert.deepEqual(status('limited@mastodon'), ['rate-limited']);
-  assert.deepEqual(status('forbidden@x'), ['held']);
+  assert.deepEqual(status('limited@mastodon'), ['outcome-unknown'], '429 after a reserved effect cannot cause blind replay');
+  assert.deepEqual(status('forbidden@x'), ['outcome-unknown']);
   assert.deepEqual(status('fresh@linkedin'), ['held'], 'no owner approval, no live post');
   assert.deepEqual(status('nocred@facebook-page'), ['held']);
   assert.equal(outcome.registry.accounts.find((a) => a.id === 'forbidden@x').state, 'held');
@@ -343,17 +344,28 @@ test('mixed sourced claims must all retain independently named current evidence'
   assert.equal(effects, 1);
 });
 
-test('publish: server errors retry then hold, other 4xx are refused and never retried', async () => {
-  const flaky = adapterThat('bluesky', async () => { throw Object.assign(new Error('upstream'), { status: 503 }); });
-  const first = await cycle({ accounts: [account('a@bluesky', 'bluesky')], adapters: { bluesky: flaky }, live: true, resolvers: { env: okFetch } });
-  assert.equal(first.results[0].status, 'retry');
-  const prior = [1, 2].map(() => ({ accountId: 'a@bluesky', renditionId: first.results[0].renditionId, status: 'retry', at: '2026-10-20T00:00:00Z' }));
-  const third = await cycle({ accounts: [account('a@bluesky', 'bluesky')], adapters: { bluesky: flaky }, live: true, journal: prior, resolvers: { env: okFetch } });
-  assert.equal(third.results[0].status, 'held');
-  const bad = adapterThat('bluesky', async () => { throw Object.assign(new Error('invalid record'), { status: 400 }); });
-  const rejected = await cycle({ accounts: [account('a@bluesky', 'bluesky')], adapters: { bluesky: bad }, live: true, resolvers: { env: okFetch } });
-  assert.equal(rejected.results[0].status, 'refused');
-  assert.equal(rejected.registry.accounts[0].state, 'active');
+test('publish: ambiguous remote effects hold after exactly one write; no blind HTTP retry', async () => {
+  let attempts = 0;
+  const flaky = adapterThat('bluesky', async () => {
+    attempts++; throw Object.assign(new Error('response vanished after possibly accepted write'), { status: 503 });
+  });
+  const args = { accounts: [account('a@bluesky', 'bluesky')], adapters: { bluesky: flaky },
+    live: true, resolvers: { env: okFetch } };
+  const first = await cycle(args);
+  assert.equal(first.results[0].status, 'outcome-unknown');
+  assert.match(first.results[0].effectId, /^ni:\/\/\/sha-256;/u);
+  assert.equal(attempts, 1);
+  const second = await cycle({ ...args, journal: first.journal });
+  assert.deepEqual(second.results.map(row => row.status), ['held']);
+  assert.equal(attempts, 1, 'a possibly accepted post must not be duplicated');
+  for (const status of [400, 429]) {
+    const bad = adapterThat('bluesky', async () => {
+      throw Object.assign(new Error('API answered after effect boundary'), { status });
+    });
+    const outcome = await cycle({ ...args, adapters: { bluesky: bad } });
+    assert.equal(outcome.results[0].status, 'outcome-unknown',
+      'post-effect response is not a safe automatic retry signal');
+  }
 });
 
 test('publish: manual-only platforms are never driven', async () => {
