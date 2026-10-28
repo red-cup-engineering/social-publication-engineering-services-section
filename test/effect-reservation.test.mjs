@@ -205,4 +205,4 @@ test('parallel accounts remain independent; one unknown receipt does not freeze 
   assert.equal(good,1);
   assert.equal(rows(journal).length,2);
   assert.equal(new Set(rows(journal).map(x=>x.effectId)).size,2);
-});
+}));
