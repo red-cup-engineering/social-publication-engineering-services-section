@@ -1,6 +1,6 @@
 # Social publication: exact public readback and competitive assays
 
-**Status:** Engineering source candidate, 2026-10-28. Not an admitted release, public deployment, verified account session, social readership or market outcome.
+**Status:** Original source merged on 2026-10-28 by [PR #9](https://github.com/red-cup-engineering/social-publication-engineering-services-section/pull/9), merge commit `2891af977c29f9d1fd3cd805c9e069162e8928a7`. The public-source native verification passed 96 cases; original private SignCraft-dependent package qualification, registry publication, installed consumer, account permission, live public readback and audience outcomes have not been received.
 
 ## Existing owners, not another social platform
 
@@ -43,7 +43,7 @@ A passing test of code is weaker than a platform-observed outcome; a platform-ob
 
 ## Next receiving, in existing owners
 
-**P0 — qualify and receive this source.** Exact-commit public-source `npm run check` and `npm run test:public-source` have passed. Still run authentic original `npm run verify` with pinned SignCraft 0.6.2 on an authorized independent runner, not a substitute dependency. Review its source and merge through GitHub. The private SignCraft closure or CI billing can hold full verification without redefining a green public-source build as a released package. Independently read back exact merged commit, package version and installed consumer before claiming deployment.
+**P0 — qualify and receive this source.** Exact-commit public-source `npm run check` and `npm run test:public-source` have passed. Still run authentic original `npm run verify` with pinned SignCraft 0.6.2 on an authorized independent runner, not a substitute dependency. The original source review and merge were completed in PR #9; qualified installed package receiving remains open. The private SignCraft closure or CI billing can hold full verification without redefining a green public-source build as a released package. Independently read back exact merged commit, package version and installed consumer before claiming deployment.
 
 **P1 — original publisher actually publishes.** Source publisher supplies exact signed/custodied editorial authority, up-to-date `readCurrentSource`, canonical HTTPS page and accepted post intent. Credentials remain at the original account. Perform a sandbox-approved real publishing session and read back exact public Bluesky record through the new operation, preserving both timestamps and results.
 
