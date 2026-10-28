@@ -9,7 +9,9 @@
  *
  * Lexicon: https://github.com/bluesky-social/atproto/blob/main/lexicons/app/bsky/feed/getPosts.json
  */
-import { niOfJson } from './canonical.mjs';
+import { niOfJson, sha256Hex } from './canonical.mjs';
+import { niDigest } from '../index.mjs';
+import { blueskyIntentForRendition } from './adapters.mjs';
 
 export const BLUESKY_PUBLIC_POST_ENDPOINT = 'https://public.api.bsky.app/xrpc/app.bsky.feed.getPosts';
 export const BLUESKY_POST_READBACK_MAX_BYTES = 131_072;
@@ -149,4 +151,53 @@ export async function readBlueskyPostReceipt({ intent, receipt, publishedCid, re
     canonicalLinkCarriedBy: sourceLink, publicTextBytes: Buffer.byteLength(post.record.text),
     identityQualification: 'exact-AT-URI-author-DID-CID-copy-and-canonical-link',
   });
+}
+
+
+/**
+ * Consume the *original* runDue posted journal, exact rendition and originating
+ * account without inventing a transport receipt from an operator's guesses.
+ * Legacy journal entries lacking the actual adapter's NI-addressed provider
+ * receipt remain held. They cannot be retrospectively upgraded by assumption.
+ */
+export function admitBlueskyJournalPost({ rendition, account, journalEntry } = {}) {
+  if (!own(rendition) || !own(account) || !own(journalEntry) ||
+      rendition.platform !== 'bluesky' || account.platform !== 'bluesky' ||
+      typeof account.id !== 'string' || !account.id ||
+      journalEntry.status !== 'posted' || journalEntry.platform !== 'bluesky' ||
+      journalEntry.accountId !== account.id || rendition.accountId !== account.id ||
+      journalEntry.renditionId !== rendition.id ||
+      typeof rendition.text !== 'string' || typeof rendition.sourceNi !== 'string' ||
+      !NI.test(rendition.sourceNi) || journalEntry.sourceNi !== rendition.sourceNi ||
+      !NI.test(journalEntry.releaseRef) ||
+      journalEntry.textHash !== sha256Hex(rendition.text) ||
+      !validUtc(journalEntry.at)) {
+    throw new TypeError('Original posted journal, account and rendition are not exactly bound');
+  }
+  if (!own(journalEntry.transportReceipt) ||
+      journalEntry.intentNi === undefined || !NI.test(journalEntry.intentNi) ||
+      typeof journalEntry.externalId !== 'string' ||
+      typeof journalEntry.externalCid !== 'string' ||
+      journalEntry.transportReceipt.responseDigest !== niDigest({
+        uri: journalEntry.externalId, cid: journalEntry.externalCid,
+      }) ||
+      journalEntry.transportReceipt.externalId !== journalEntry.externalId) {
+    throw new TypeError('Original publisher transport receipt and CID are missing or changed');
+  }
+  const intent = blueskyIntentForRendition(rendition);
+  if (intent.id !== journalEntry.intentNi) {
+    throw new TypeError('Queued rendition no longer matches the actually published intent');
+  }
+  const original = {
+    intent, receipt: journalEntry.transportReceipt,
+    publishedCid: journalEntry.externalCid, repoDid: account.did,
+  };
+  admitBlueskyPostExpectation(original); // enforce the complete original receipt NI
+  return Object.freeze(original);
+}
+
+/** Credential-free independent observation of the exact originally journaled post. */
+export async function readBlueskyJournalPost(journalSource, options = {}) {
+  const original = admitBlueskyJournalPost(journalSource);
+  return readBlueskyPostReceipt(original, options);
 }
