@@ -2,6 +2,10 @@
 /**
  * syndicate: the operator CLI of the syndication engine. Files in, files out; never posts unless
  * `due --live` is given AND the account carries the owner's approval AND credentials resolve.
+ * Live operation ALSO requires a fresh, trusted publisher readCurrentSource
+ * capability supplied by the original host. This standalone CLI has no such
+ * connected source reader; --live therefore records held, not a social post.
+ * Do not treat a stale JSON queue or a --live flag as publisher approval.
  *
  *   syndicate plan     --items ITEMS.json --accounts ACCOUNTS.json --start ISO --days N --out DIR [--rules RULES.json] [--journal JOURNAL.jsonl]
  *   syndicate due      --queue DIR --now ISO [--live] [--journal JOURNAL.jsonl]       (dry run unless --live)
