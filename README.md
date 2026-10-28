@@ -102,7 +102,7 @@ order while preserving the same requirement and evidence identities. JSON Schema
 2020-12 contracts and the semantic admission rules are documented in
 [the operation contract](docs/community-evidence.md).
 
-The source package declares `0.3.0-dev.0`, pins SignCraft `0.6.1-dev.508`, and is
+The current source manifest declares `0.3.0`, pins SignCraft `0.6.2`, and is
 configured for `registry.561.group` under the non-default `next` tag. Native
 source qualification exercises the authentic pinned SignCraft supplier and
 existing publication tests. Source availability and these checks do not assert
@@ -131,7 +131,35 @@ Interfaces other owners maintain (all JSON; examples in `content/` and `test/`):
 
 Compositor (`compositor.mjs`): crop, scale, pad, cover Google's visible logo where declared, place our lockup, caption, transcode -- as data, renderable to SVG or ffmpeg arguments. It refuses to strip, alter or defeat SynthID, C2PA or metadata, and refuses any step off its allow-list. The unmodified original is archived by content address and named as the derivative's ingredient.
 
-Operator CLI: `node apps/syndicate.mjs plan|due|feedback|verify` (see the file header). `due` never posts without `--live`, an adapter that declares itself live, and the account's recorded first-post approval.
+Operator CLI: `node apps/syndicate.mjs plan|due|feedback|verify` (see the file header). A live social effect additionally requires a trusted, **fresh original-publisher readback** supplied to the public API's `readCurrentSource` capability. The standalone CLI does not have that receiving port, so `due --live` holds instead of posting; no CLI flag or old JSON queue substitutes for current source evidence. Dry-run planning still works.
+
+### Live source-currentness and correction-safe re-queue
+
+A queue slot is an intention, **not** an evergreen authority. The shared
+`runDue` now checks a fresh, trusted `SocialSourceReadback` for the exact
+canonical URL, content item, source edition, original release receipt and
+current public status **before credentials or provider effects**. The original
+publisher supplies `readCurrentSource`; no source reader means a held post,
+not an implicit `active` state. An observation more than 15 minutes old,
+a changed/retracted/withheld source or a mismatched edition is held. When
+`ContentItem.claimRefs` supplies distinct consequential claim NI addresses,
+the original readback must match each with a current, evidence-linked
+assessment; an old statistic cannot borrow a still-valid theory's currency.
+For nonfactual media without linked claims, only the source-edition check
+applies. Neither check proves scientific truth or that the social recipient
+read the post.
+
+The new rendition `sourceNi` and optional `claimRefs` bind that lineage
+into its deterministic identity. Existing queues lacking the source witness
+must be rebuilt and re-admitted, not sent under a legacy assumption. The
+current `posted` journal status remains an **adapter submission receipt**,
+not independently observed public delivery. See the
+[source-currentness and correction-safe syndication guide](docs/source-currentness-and-correction-safe-syndication.md)
+for exact source-readback schema, pure tests, vendor comparison and native
+receiving obligations. The existing [Content Mill temporal requirement
+#24](https://github.com/red-cup-engineering/computer-content-engineering-services-section/issues/24)
+owns full per-claim validity and correction fan-out; no new source catalog
+is introduced here.
 
 ## Brand-presence inputs (`feat/brand-presence-inputs-20261024`)
 
