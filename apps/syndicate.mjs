@@ -11,13 +11,14 @@
  *   syndicate due      --queue DIR --now ISO [--live] [--journal JOURNAL.jsonl]       (dry run unless --live)
  *   syndicate feedback --readings READINGS.json
  *   syndicate verify   --manifest MANIFEST.json --keys KEYS.json [--file POSTED] [--original ORIGINAL]
+ *   syndicate readback --queue DIR --accounts ACCOUNTS.json --account ACCOUNT_ID --rendition RENDITION_NI --receipt RECEIPT_NI [--journal JOURNAL.jsonl]
  */
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   admitAccountRegistry, admitContentItem, admitPlatformRuleSet, automationAdmission, blueskyAdapter, dryRunAdapter, gateRendition,
-  manualPacket, niOfBytes, planSchedule, renditionsFor, ruleFor, runDue, summarize, verifyManifest,
+  manualPacket, niOfBytes, niOfJson, planSchedule, readBlueskyJournalPost, renditionsFor, ruleFor, runDue, summarize, verifyManifest,
 } from '../src/syndication/index.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -105,18 +106,57 @@ export async function due(opts) {
   return { live, perAccount: outcome.perAccount, results: outcome.results.map(({ accountId, renditionId, status, reason }) => ({ accountId, renditionId, status, reason })) };
 }
 
+
+/**
+ * Read the exact originally journaled Bluesky publication through public
+ * AppView, append a separate immutable observation to the same original
+ * journal, and do not claim audience delivery or change publication status.
+ * The explicit receipt NI disambiguates retries, revisions and requeues.
+ */
+export async function readback(opts, { fetchImpl = globalThis.fetch, observedAt = new Date().toISOString() } = {}) {
+  const queue = need(opts, 'queue');
+  const registry = admitAccountRegistry(readJson(need(opts, 'accounts')));
+  const accountId = need(opts, 'account');
+  const renditionId = need(opts, 'rendition');
+  const receiptNi = need(opts, 'receipt');
+  const account = registry.accounts.find(row => row.id === accountId);
+  if (!account || account.platform !== 'bluesky') throw new Error('Original Bluesky account is not admitted');
+  const rendition = readJsonl(join(queue, 'renditions.jsonl')).filter(row => row.id === renditionId && row.accountId === accountId);
+  if (rendition.length !== 1) throw new Error('Exactly one original account rendition is required');
+  const journalPath = opts.journal ?? join(queue, 'journal.jsonl');
+  const history = readJsonl(journalPath);
+  const posted = history.filter(row => row.status === 'posted' &&
+    row.accountId === accountId && row.renditionId === renditionId &&
+    row.transportReceipt?.id === receiptNi);
+  if (posted.length !== 1) throw new Error('Exactly one original bound transport receipt is required; legacy or ambiguous posts are held');
+  const observation = await readBlueskyJournalPost({
+    rendition: rendition[0], account, journalEntry: posted[0],
+  }, { fetchImpl, observedAt });
+  const event = Object.freeze({
+    status: 'public-readback', accountId, platform: 'bluesky',
+    renditionId, transportReceiptNi: receiptNi, at: observation.observedAt,
+    observation,
+  });
+  const observationNi = niOfJson(event);
+  if (!history.some(row => row.status === 'public-readback' && row.observationNi === observationNi)) {
+    appendFileSync(journalPath, JSON.stringify({ observationNi, ...event }) + '\n');
+  }
+  return { observationNi, standing: observation.standing, observation, readOnly: true };
+}
+
 async function main(argv) {
   const [command, ...rest] = argv;
   const opts = options(rest);
   const print = (value) => process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
   if (command === 'plan') print(plan(opts));
   else if (command === 'due') print(await due(opts));
+  else if (command === 'readback') print(await readback(opts));
   else if (command === 'feedback') print(summarize(readJson(need(opts, 'readings'))));
   else if (command === 'verify') {
     const verdict = verifyManifest(readJson(need(opts, 'manifest')), { publicKeys: readJson(need(opts, 'keys')), bytes: opts.file ? readFileSync(opts.file) : undefined, originalBytes: opts.original ? readFileSync(opts.original) : undefined });
     print(verdict);
     if (!verdict.valid) process.exitCode = 1;
-  } else { process.stderr.write('usage: syndicate plan|due|feedback|verify (see file header)\n'); process.exitCode = 2; }
+  } else { process.stderr.write('usage: syndicate plan|due|readback|feedback|verify (see file header)\n'); process.exitCode = 2; }
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) main(process.argv.slice(2)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
