@@ -9,7 +9,8 @@
  * reservation service; copying JSONL between nodes does not provide one.
  */
 import { constants, closeSync, existsSync, fsyncSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs';
-import { hasSocialEffectAttempt, prepareSocialEffect, unresolvedSocialEffects } from './effect-attempt.mjs';
+import { hasSocialEffectAttempt, unresolvedSocialEffects } from './effect-attempt.mjs';
+import { niOfJson } from './canonical.mjs';
 
 const lockFlags = constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW ?? 0);
 const appendFlags = constants.O_WRONLY | constants.O_CREAT | constants.O_APPEND | (constants.O_NOFOLLOW ?? 0);
@@ -35,25 +36,15 @@ export function reserveSocialEffectInJournal(journalPath) {
   return async (attempt) => {
     // Revalidate the source/shape of the attempted work rather than trusting
     // caller-provided IDs or a decoded journal line.
-    const synthetic = {
-      entry: { status:'scheduled', at:attempt?.scheduledAt,
-        accountId:attempt?.accountId, platform:attempt?.platform,
-        renditionId:attempt?.renditionId },
-      account: { id:attempt?.accountId, platform:attempt?.platform },
-      rendition: { id:attempt?.renditionId, accountId:attempt?.accountId,
-        platform:attempt?.platform, text:'UNAVAILABLE' },
-      sourceWitness: { allowed:true,sourceNi:attempt?.sourceNi,releaseRef:attempt?.releaseRef },
-    };
-    // Only the caller's validated NI may be reserved. The original runDue
-    // owns the binding to literal text and edition; this host does not
-    // duplicate or reconstruct that content from the journal.
     if (attempt?.type !== 'SocialPublicationEffectAttempt' || attempt.version !== 1 ||
         typeof attempt.id !== 'string' || !/^ni:\/\/\/sha-256;[A-Za-z0-9_-]{43}$/u.test(attempt.id) ||
         !attempt.accountId || !attempt.renditionId || !attempt.sourceNi ||
         !attempt.releaseRef || typeof attempt.textHash !== 'string' ||
         !/^[a-f0-9]{64}$/u.test(attempt.textHash))
       throw new TypeError('Prepared social effect contract is malformed');
-    void synthetic; void prepareSocialEffect;
+    const { id, ...body } = attempt;
+    if (niOfJson(body) !== id)
+      throw new TypeError('Prepared effect content does not match its address');
     // If the process is killed with this file held, the next runner refuses.
     // A human must establish the original effect's actual remote outcome and
     // that no writer remains, then explicitly handle the lock.
