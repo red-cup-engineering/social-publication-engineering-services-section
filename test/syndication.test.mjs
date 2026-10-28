@@ -262,7 +262,7 @@ test('publish: live needs the owner approval, and a failing account never blocks
 test('live source reads block retracted editions and do not block unrelated accounts', async () => {
   let posts = 0, credentials = 0;
   const adapters = { bluesky: adapterThat('bluesky', async () => {
-    posts++; return { externalId: 'at://did:plc:abc/app.bsky.feed.post/example' };
+    posts++; return { externalId: 'at://did:plc:abc/app.bsky.feed.post/example', cid: 'bafyreiabcdefghijklmnopqrstuvwxyz234567' };
   }) };
   const source = async (request) => ({
     ...qualifiedSourceFixture(request),
@@ -279,6 +279,7 @@ test('live source reads block retracted editions and do not block unrelated acco
   assert.equal(posts, 1);
   assert.equal(credentials, 1, 'no credential lookup for retracted source');
   assert.equal(result.results.find(x => x.status === 'posted').releaseRef, sourceReleaseFixture);
+  assert.equal(result.results.find(x => x.status === 'posted').externalCid, 'bafyreiabcdefghijklmnopqrstuvwxyz234567', 'retain exact submitted CID for independent public readback');
   assert.equal(result.results.find(x => x.status === 'posted').sourceClaimsChecked, 0);
 });
 
