@@ -176,56 +176,54 @@ The brand/account thread's inputs to the syndication engine, in the interfaces a
 `ContentItem` is extended with optional `claims`, `sources`, `ai` and `authoring` (a `PostCandidateSet` in the CLI header). The extension does not change `renditionsFor`.
 
 
-## Independent Bluesky post readback
+## Exact Bluesky transport and public readback
 
-The original Bluesky adapter now retains the provider's CID in addition to its
-AT URI. A live runDue journal entry records this as externalCid alongside its
-existing externalId, sourceNi, releaseRef and source observation. Those are
-**transport receipts**, not observed publication or readership.
+The original Bluesky adapter now retains the provider's AT URI and CID,
+its exact outgoing SocialPublicationIntent NI, and a content-addressed
+SocialPublicationReceipt. The latter binds the submitted URI **and CID**
+through its responseDigest. A live runDue journal records those on the
+original posted entry along with the original release/source witness.
+The provider's create-record response is **transport acceptance**, not
+independently observed publication or human readership.
 
-Use the credential-free ./bluesky-post-readback export to perform an independent
-public AppView reading of the *same* record, after the original authorized
-publisher has supplied its exact content and original post receipt:
+The existing syndicate CLI can now read one *actual* journaled post without
+any posting credentials or reconstruction of editorial acceptance:
 
-~~~js
-import {
-  publicationIntent, publicationReceipt,
-} from '@red-cup-engineering/social-publication-services-section';
-import {
-  readBlueskyPostReceipt,
-} from '@red-cup-engineering/social-publication-services-section/bluesky-post-readback';
-
-// All fields below come from the original publisher's admitted content,
-// its accepted journal record and the original account DID; not a guessed URL.
-const intent = publicationIntent({
-  canonicalUrl: original.canonicalUrl,
-  text: postedRendition.text,
-  title: postedRendition.title,
-});
-const receipt = publicationReceipt({
-  provider: 'bluesky',
-  intent,
-  externalId: postedJournal.externalId,
-  observedAt: postedJournal.at,
-});
-const observed = await readBlueskyPostReceipt({
-  intent, receipt, publishedCid: postedJournal.externalCid,
-  repoDid: originalAccount.did,
-});
-// 'public-record-match' is an exact AppView observation, not editorial
-// acceptance, independent PDS verification, syndication or human readership.
+~~~sh
+node apps/syndicate.mjs readback \
+  --queue /original/queue \
+  --accounts /original/accounts.json \
+  --account '561-group@bluesky' \
+  --rendition 'ni:///sha-256;ORIGINAL_RENDITION_NI' \
+  --receipt 'ni:///sha-256;ORIGINAL_TRANSPORT_RECEIPT_NI'
 ~~~
 
-The readback refuses an unbound or changed intent or receipt **before network
-access**, requests one exact AT URI from the unauthenticated public AppView,
-bounds its response to 128 KiB, and checks author DID, record CID, text and
-canonical source link. It distinguishes public-record-match, not-observed,
-revision-conflict, identity-conflict, content-conflict,
-source-link-missing and unavailable; it never infers deletion, reach or
-successful distribution from a missing post. It does not grant posting rights,
-hold platform credentials or modify a published record.
+The exact account, rendition and receipt come from the original owner, not
+the example strings above. The CLI reads the existing account registry,
+rendition JSONL and posting journal. It refuses legacy, changed, duplicate or
+incomplete transport receipts **before** contacting the network; it then
+performs one unauthenticated app.bsky.feed.getPosts read and appends a
+distinct public-readback event to that **same** journal. Identical observations
+are idempotent; newer observations retain the earlier evidence. No rescheduling,
+new publication, profile editing or credential resolution occurs.
 
-The exact published intent must reflect the post that was **actually**
-authorized, not regenerated editorial copy; publisher and source-currentness
-receiving remain separate. See [public-readback and competitive assay
-contract](docs/social-publication-public-readback-and-competitive-assays.md).
+Hosts can call readBlueskyJournalPost({rendition,account,journalEntry},
+{fetchImpl,observedAt}) through ./bluesky-post-readback or ./syndication
+instead of using a CLI. The original API also exposes a lower-level
+readBlueskyPostReceipt only when the exact original intent, content-addressed
+receipt, CID and DID are already held.
+
+The public readback checks exact author DID, record URI, CID, text, and
+canonical source link, with no token, no redirects, an 8-second timeout
+and a 128 KiB response cap. Results distinguish public-record-match,
+not-observed, revision-conflict, identity-conflict, content-conflict,
+source-link-missing, and unavailable. A missing AppView result is not
+proof of deletion or suppression; a matching result is not proof of
+original editorial approval, independent PDS validation, ActivityPub delivery,
+human reading, qualified traffic, or economic benefit.
+
+See the [source-to-receipt and competitive assay contract](
+docs/social-publication-public-readback-and-competitive-assays.md) for the
+actual source ownership, receiving gates, and WriteFreely/Buffer/SocialBee
+comparison tests. Both these source changes and their tests must be
+independently qualified and received by an authorized host before deployment.
