@@ -41,7 +41,7 @@ export function blueskyAdapter({ loadBytes, service = 'https://bsky.social' } = 
           externalThumb,
         });
         const receipt = await publishBlueskyPost({ authorizedFetch, service, repoDid: account.did, record });
-        return { externalId: receipt.uri, url: `https://bsky.app/profile/${account.handle}/post/${receipt.uri.split('/').pop()}` };
+        return { externalId: receipt.uri, cid: receipt.cid, url: `https://bsky.app/profile/${account.handle}/post/${receipt.uri.split('/').pop()}` };
       } catch (error) {
         const wrapped = new Error(error.message);
         wrapped.status = statusOf(error);
