@@ -26,6 +26,16 @@ export function admitContentItem(item) {
   if (!KINDS.has(item.kind)) throw new TypeError(`content item ${item.id}: kind ${[...KINDS].join(' | ')}`);
   if (!/^https:\/\//u.test(item.canonicalUrl)) throw new TypeError(`content item ${item.id}: canonicalUrl must be https`);
   if (!item.source?.ni) throw new TypeError(`content item ${item.id}: source.ni (content address of the canonical bytes)`);
+  // Claim references are source-owned NI addresses, not assertions generated
+  // from social copy. Unlinked media may have no claim list; if supplied,
+  // every distinct consequential claim must be traceable at live receiving.
+  if (item.claimRefs !== undefined &&
+      (!Array.isArray(item.claimRefs) ||
+       new Set(item.claimRefs).size !== item.claimRefs.length ||
+       !item.claimRefs.every(ref => typeof ref === 'string' &&
+         /^ni:\/\/\/sha-256;[A-Za-z0-9_-]{43}$/u.test(ref)))) {
+    throw new TypeError(`content item ${item.id}: claimRefs must be distinct source NI addresses`);
+  }
   for (const media of item.media ?? []) {
     if (!media.ni || !media.mediaType || typeof media.aiGenerated !== 'boolean') throw new TypeError(`content item ${item.id}: media needs ni, mediaType and aiGenerated`);
   }
@@ -99,6 +109,8 @@ export function renditionsFor(item, { accounts, ruleSet, copy, verifyBase }) {
       itemNi: item.id, accountId: account.id, platform: account.platform, brand: account.brand, section: item.section, kind: item.kind,
       text, title: written?.title ?? (rule.text.titleMaxGraphemes ? truncateGraphemes(item.title, rule.text.titleMaxGraphemes) : null),
       link: item.canonicalUrl, language: item.language,
+      sourceNi: item.source.ni,
+      ...(item.claimRefs === undefined ? {} : { claimRefs: Object.freeze([...item.claimRefs]) }),
       media: media.map((pick) => ({ ni: pick.media.ni, as: pick.as, role: pick.media.role, aspect: pick.aspect, mediaType: pick.media.mediaType, aiGenerated: pick.media.aiGenerated, alt: pick.media.alt ?? null, manifestNi: pick.media.manifestNi ?? null, originalNi: pick.media.originalNi ?? null })),
       disclosure,
       copyOrigin: written ? 'voice-hook' : 'template',
