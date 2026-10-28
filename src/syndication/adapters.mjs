@@ -6,7 +6,7 @@
  * platform is either manual (a packet a person posts, see manualPacket) or not installed; the
  * runner refuses to post where no adapter is installed.
  */
-import { blueskyPostRecord, publicationIntent, publishBlueskyPost, uploadBlueskyBlob } from '../index.mjs';
+import { blueskyPostRecord, niDigest, publicationIntent, publicationReceipt, publishBlueskyPost, uploadBlueskyBlob } from '../index.mjs';
 
 const statusOf = (error) => {
   if (error?.status) return Number(error.status);
@@ -19,6 +19,15 @@ const statusOf = (error) => {
  * @param {(ni:string) => Promise<Uint8Array>} options.loadBytes   fetches image bytes for a media address (host-supplied)
  * @param {(rendition) => string} [options.langOf]
  */
+/** Reconstruct only from the exact original rendition, never from social preview text. */
+export function blueskyIntentForRendition(rendition) {
+  return publicationIntent({
+    canonicalUrl: rendition.link, text: rendition.text,
+    title: rendition.title ?? undefined,
+    languages: [rendition.language ?? 'en'], kind: 'article',
+  });
+}
+
 export function blueskyAdapter({ loadBytes, service = 'https://bsky.social' } = {}) {
   return Object.freeze({
     platform: 'bluesky', live: true,
@@ -31,7 +40,7 @@ export function blueskyAdapter({ loadBytes, service = 'https://bsky.social' } = 
     },
     async publish(rendition, { account, authorizedFetch }) {
       try {
-        const intent = publicationIntent({ canonicalUrl: rendition.link, text: rendition.text, title: rendition.title ?? undefined, languages: [rendition.language ?? 'en'], kind: 'article' });
+        const intent = blueskyIntentForRendition(rendition);
         let externalThumb;
         const image = rendition.media.find((media) => media.as === 'image');
         if (image) externalThumb = await uploadBlueskyBlob({ authorizedFetch, service, bytes: await loadBytes(image.ni), mediaType: image.mediaType });
@@ -41,7 +50,15 @@ export function blueskyAdapter({ loadBytes, service = 'https://bsky.social' } = 
           externalThumb,
         });
         const receipt = await publishBlueskyPost({ authorizedFetch, service, repoDid: account.did, record });
-        return { externalId: receipt.uri, cid: receipt.cid, url: `https://bsky.app/profile/${account.handle}/post/${receipt.uri.split('/').pop()}` };
+        const transportReceipt = publicationReceipt({
+          provider: 'bluesky', intent, externalId: receipt.uri,
+          observedAt: new Date().toISOString(),
+          responseDigest: niDigest({ uri: receipt.uri, cid: receipt.cid }),
+        });
+        return {
+          externalId: receipt.uri, cid: receipt.cid, intentNi: intent.id, transportReceipt,
+          url: `https://bsky.app/profile/${account.handle}/post/${receipt.uri.split('/').pop()}`,
+        };
       } catch (error) {
         const wrapped = new Error(error.message);
         wrapped.status = statusOf(error);
