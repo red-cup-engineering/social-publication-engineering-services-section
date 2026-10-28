@@ -259,6 +259,89 @@ test('publish: live needs the owner approval, and a failing account never blocks
   assert.ok(!JSON.stringify(outcome).includes('abcdefghijklmnopqrstuvwxyz'), 'secrets never reach results or journal');
 });
 
+test('live source reads block retracted editions and do not block unrelated accounts', async () => {
+  let posts = 0, credentials = 0;
+  const adapters = { bluesky: adapterThat('bluesky', async () => {
+    posts++; return { externalId: 'at://did:plc:abc/app.bsky.feed.post/example' };
+  }) };
+  const source = async (request) => ({
+    ...qualifiedSourceFixture(request),
+    publicationStatus: request.accountId === 'withdrawn@bluesky' ? 'absurd' : 'active',
+  });
+  const result = await cycle({
+    accounts: [account('withdrawn@bluesky', 'bluesky'), account('current@bluesky', 'bluesky')],
+    adapters, live: true, readCurrentSource: source,
+    resolvers: { env: () => { credentials++; return okFetch(); } },
+  });
+  const status = id => result.results.filter(x => x.accountId === id).map(x => x.status);
+  assert.deepEqual(status('withdrawn@bluesky'), ['held']);
+  assert.deepEqual(status('current@bluesky'), ['posted']);
+  assert.equal(posts, 1);
+  assert.equal(credentials, 1, 'no credential lookup for retracted source');
+  assert.equal(result.results.find(x => x.status === 'posted').releaseRef, sourceReleaseFixture);
+  assert.equal(result.results.find(x => x.status === 'posted').sourceClaimsChecked, 0);
+});
+
+test('missing or stale original publisher readback holds before credentials and posting', async () => {
+  let reads = 0, credentials = 0, publishes = 0;
+  const adapters = { bluesky: adapterThat('bluesky', async () => {
+    publishes++; return { externalId: 'unwanted' };
+  }) };
+  for (const reader of [null, async request => {
+    reads++; return { ...qualifiedSourceFixture(request), observedAt: '2026-10-27T15:14:59Z' };
+  }, async request => {
+    reads++; return { ...qualifiedSourceFixture(request), sourceNi: niOfBytes(Buffer.from('new public edition')) };
+  }, async () => {
+    reads++; throw new Error('publisher read timeout');
+  }]) {
+    const result = await cycle({
+      accounts: [account('s@bluesky', 'bluesky')], adapters, live: true, readCurrentSource: reader,
+      resolvers: { env: () => { credentials++; return okFetch(); } },
+    });
+    assert.deepEqual(result.results.map(x => x.status), ['held']);
+    assert.equal(result.registry.accounts[0].state, 'active',
+      'source hold is not account revocation');
+  }
+  assert.equal(reads, 3);
+  assert.equal(credentials, 0);
+  assert.equal(publishes, 0);
+});
+
+test('mixed sourced claims must all retain independently named current evidence', async () => {
+  const claimA = niOfBytes(Buffer.from('durable definition'));
+  const claimB = niOfBytes(Buffer.from('time-dependent statistic'));
+  const work = item(60, { claimRefs: [claimA, claimB] });
+  const registry = registryOf(account('s@bluesky', 'bluesky'));
+  const [rendition] = renditionsFor(work, { accounts: registry.accounts, ruleSet });
+  assert.equal(rendition.sourceNi, work.source.ni);
+  assert.deepEqual(rendition.claimRefs, [claimA, claimB]);
+  assert.equal(Object.isFrozen(rendition.claimRefs), true);
+  assert.throws(() => admitContentItem({ ...work, claimRefs: [claimA, claimA] }),
+    /claimRefs must be distinct/u);
+  assert.throws(() => admitContentItem({ ...work, claimRefs: ['not a source ref'] }),
+    /claimRefs must be distinct/u);
+
+  let effects = 0;
+  const adapter = { bluesky: adapterThat('bluesky', async () => {
+    effects++; return { externalId: 'one-remote-record' };
+  }) };
+  const read = (assessment) => request => ({
+    ...qualifiedSourceFixture(request), claims: [
+      { ref: claimA, disposition: 'current', evidenceRef: niOfBytes(Buffer.from('source A')) },
+      { ref: claimB, disposition: assessment, evidenceRef: niOfBytes(Buffer.from('source B')) },
+    ],
+  });
+  const args = { accounts: registry.accounts, adapters: adapter, live: true,
+    contentItem: work, resolvers: { env: okFetch } };
+  const stale = await cycle({ ...args, readCurrentSource: read('superseded') });
+  assert.deepEqual(stale.results.map(x => x.status), ['held']);
+  assert.equal(effects, 0);
+  const current = await cycle({ ...args, readCurrentSource: read('current') });
+  assert.deepEqual(current.results.map(x => x.status), ['posted']);
+  assert.equal(current.results[0].sourceClaimsChecked, 2);
+  assert.equal(effects, 1);
+});
+
 test('publish: server errors retry then hold, other 4xx are refused and never retried', async () => {
   const flaky = adapterThat('bluesky', async () => { throw Object.assign(new Error('upstream'), { status: 503 }); });
   const first = await cycle({ accounts: [account('a@bluesky', 'bluesky')], adapters: { bluesky: flaky }, live: true, resolvers: { env: okFetch } });
