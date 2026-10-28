@@ -20,6 +20,7 @@ import { authorizedFetchFor, holdAccount } from './accounts.mjs';
 import { gateRendition } from './gate.mjs';
 import { dueEntries, limitCheck } from './schedule.mjs';
 import { ruleFor } from './platform-rules.mjs';
+import { qualifySocialSourceReadback } from './source-currentness.mjs';
 
 const MAX_ATTEMPTS = 3;
 
@@ -44,9 +45,10 @@ export const dryRunAdapter = (platform) => Object.freeze({
  * @param {object} [input.manifests]
  * @param {object} [input.publicKeys]
  * @param {Function} [input.voiceCheck]
+ * @param {Function} [input.readCurrentSource] trusted publisher readback port (mandatory for live effects)
  * @returns {Promise<{results: object[], journal: object[], registry: object, perAccount: object}>}
  */
-export async function runDue({ entries, renditions, registry, ruleSet, adapters, resolvers = {}, journal = [], nowMs, live = false, manifests = {}, publicKeys = {}, voiceCheck, maxPerAccount = 1 }) {
+export async function runDue({ entries, renditions, registry, ruleSet, adapters, resolvers = {}, journal = [], nowMs, live = false, manifests = {}, publicKeys = {}, voiceCheck, maxPerAccount = 1, readCurrentSource }) {
   const byId = renditions instanceof Map ? renditions : new Map(Object.entries(renditions));
   const due = dueEntries(entries, nowMs);
   const accountIds = [...new Set(due.map((entry) => entry.accountId))].sort();
@@ -80,6 +82,31 @@ export async function runDue({ entries, renditions, registry, ruleSet, adapters,
       const check = adapter.validate(rendition, account);
       if (!check.ok) { record('refused', { reason: `adapter validation: ${check.problems.join('; ')}` }); continue; }
       if (!live || !adapter.live) { record('dry-run', { externalId: null }); continue; }
+      // Source-readback is a privileged, source-owned READ port. A scheduled
+      // rendition is never itself evidence of present editorial admissibility.
+      // Recheck after platform/account gates and before credential resolution
+      // or any remote posting effect. Missing provider or stale edition holds
+      // this rendition only; unrelated accounts and posts may proceed.
+      if (typeof readCurrentSource !== 'function') {
+        record('held', { reason: 'publisher-source-readback-capability-not-installed' });
+        continue;
+      }
+      let sourceWitness;
+      try {
+        const readback = await readCurrentSource(Object.freeze({
+          canonicalUrl: rendition.link, itemNi: rendition.itemNi,
+          sourceNi: rendition.sourceNi, accountId: account.id,
+          platform: account.platform, nowMs,
+        }));
+        sourceWitness = qualifySocialSourceReadback({ rendition, readback, nowMs });
+      } catch (error) {
+        record('held', { reason: 'publisher-source-readback-unavailable: ' + redact(error.message ?? String(error)) });
+        continue;
+      }
+      if (!sourceWitness.allowed) {
+        record('held', { reason: sourceWitness.reason });
+        continue;
+      }
       let capability;
       try { capability = await authorizedFetchFor(account, resolvers); } catch (error) {
         out.hold = `credential unavailable: ${redact(error.message)}`;
@@ -88,7 +115,9 @@ export async function runDue({ entries, renditions, registry, ruleSet, adapters,
       }
       try {
         const receipt = await adapter.publish(rendition, { account, authorizedFetch: capability });
-        record('posted', { externalId: receipt.externalId, url: receipt.url ?? null });
+        record('posted', { externalId: receipt.externalId, url: receipt.url ?? null,
+          sourceNi: sourceWitness.sourceNi, releaseRef: sourceWitness.releaseRef,
+          sourceObservedAt: sourceWitness.observedAt, sourceClaimsChecked: sourceWitness.claimsChecked });
         published += 1;
       } catch (error) {
         const message = redact(error.message);

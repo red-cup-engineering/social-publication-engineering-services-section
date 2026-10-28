@@ -11,6 +11,7 @@ export * from './rendition.mjs';
 export * from './gate.mjs';
 export * from './schedule.mjs';
 export * from './publish.mjs';
+export * from './source-currentness.mjs';
 export * from './measure.mjs';
 export { blueskyAdapter, manualPacket } from './adapters.mjs';
 export { itemsFromFeed, itemsFromYouTubeInventory } from './sources.mjs';
