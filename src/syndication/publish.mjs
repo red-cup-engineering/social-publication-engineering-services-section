@@ -12,8 +12,10 @@
  * Errors carry `status` (HTTP-like) and optionally `retryAfterSeconds`:
  *   429 -> back off this account until Retry-After (account stays active);
  *   401/403 -> hold the account (a person must look: credential, permission, or platform action);
- *   5xx / network -> retry later, up to maxAttempts, then hold;
- *   other 4xx -> the platform rejected this rendition: refused, never retried.
+ *   after a durable pre-effect reservation, ANY thrown transport response is an
+ *   ambiguous external outcome, not a retry permit. The original journal holds
+ *   that attempt until independently reconciled. This includes network loss,
+ *   429, provider 5xx and unclassified exceptions. No blind retry.
  */
 import { redact, sha256Hex } from './canonical.mjs';
 import { authorizedFetchFor, holdAccount } from './accounts.mjs';
@@ -21,8 +23,7 @@ import { gateRendition } from './gate.mjs';
 import { dueEntries, limitCheck } from './schedule.mjs';
 import { ruleFor } from './platform-rules.mjs';
 import { qualifySocialSourceReadback } from './source-currentness.mjs';
-
-const MAX_ATTEMPTS = 3;
+import { admitSocialEffectReservation, hasSocialEffectAttempt, prepareSocialEffect, unresolvedSocialEffects } from './effect-attempt.mjs';
 
 /** An adapter that never touches the network: validates and reports what it would post. */
 export const dryRunAdapter = (platform) => Object.freeze({
@@ -46,9 +47,10 @@ export const dryRunAdapter = (platform) => Object.freeze({
  * @param {object} [input.publicKeys]
  * @param {Function} [input.voiceCheck]
  * @param {Function} [input.readCurrentSource] trusted publisher readback port (mandatory for live effects)
+ * @param {Function} [input.reserveEffect] original host's atomic durable reserve-if-unused; required for all live effects
  * @returns {Promise<{results: object[], journal: object[], registry: object, perAccount: object}>}
  */
-export async function runDue({ entries, renditions, registry, ruleSet, adapters, resolvers = {}, journal = [], nowMs, live = false, manifests = {}, publicKeys = {}, voiceCheck, maxPerAccount = 1, readCurrentSource }) {
+export async function runDue({ entries, renditions, registry, ruleSet, adapters, resolvers = {}, journal = [], nowMs, live = false, manifests = {}, publicKeys = {}, voiceCheck, maxPerAccount = 1, readCurrentSource, reserveEffect }) {
   const byId = renditions instanceof Map ? renditions : new Map(Object.entries(renditions));
   const due = dueEntries(entries, nowMs);
   const accountIds = [...new Set(due.map((entry) => entry.accountId))].sort();
@@ -82,6 +84,10 @@ export async function runDue({ entries, renditions, registry, ruleSet, adapters,
       const check = adapter.validate(rendition, account);
       if (!check.ok) { record('refused', { reason: `adapter validation: ${check.problems.join('; ')}` }); continue; }
       if (!live || !adapter.live) { record('dry-run', { externalId: null }); continue; }
+      if (typeof reserveEffect !== 'function') {
+        record('held', { reason: 'durable-pre-effect-reservation-capability-not-installed' });
+        continue;
+      }
       // Source-readback is a privileged, source-owned READ port. A scheduled
       // rendition is never itself evidence of present editorial admissibility.
       // Recheck after platform/account gates and before credential resolution
@@ -107,6 +113,22 @@ export async function runDue({ entries, renditions, registry, ruleSet, adapters,
         record('held', { reason: sourceWitness.reason });
         continue;
       }
+      // A previous possibly successful effect can never be a fresh permit.
+      // This early check helps callers with an already loaded journal;
+      // the host's atomic reserve-if-unused MUST reread its durable journal
+      // under a lock and is the actual concurrency / crash safety boundary.
+      let effect;
+      try {
+        effect = prepareSocialEffect({ entry, account, rendition, sourceWitness });
+      } catch {
+        record('held', { reason: 'prepared-social-effect-contract-invalid' });
+        continue;
+      }
+      if (hasSocialEffectAttempt(history, effect) ||
+          unresolvedSocialEffects(history, { accountId: account.id, renditionId: rendition.id }).length > 0) {
+        record('held', { effectId: effect.id, reason: 'earlier-outbound-effect-unresolved-or-already-attempted' });
+        continue;
+      }
       let capability;
       try { capability = await authorizedFetchFor(account, resolvers); } catch (error) {
         out.hold = `credential unavailable: ${redact(error.message)}`;
@@ -114,8 +136,15 @@ export async function runDue({ entries, renditions, registry, ruleSet, adapters,
         break;
       }
       try {
+        admitSocialEffectReservation(await reserveEffect(effect), effect);
+      } catch (error) {
+        record('held', { effectId: effect.id,
+          reason: 'durable-effect-reservation-not-received: ' + redact(error.message ?? String(error)) });
+        continue;
+      }
+      try {
         const receipt = await adapter.publish(rendition, { account, authorizedFetch: capability });
-        record('posted', { externalId: receipt.externalId, url: receipt.url ?? null,
+        record('posted', { effectId: effect.id, externalId: receipt.externalId, url: receipt.url ?? null,
           ...(account.platform === 'bluesky' && typeof receipt.cid === 'string' ? { externalCid: receipt.cid } : {}),
           ...(account.platform === 'bluesky' && receipt.transportReceipt ? {
             intentNi: receipt.intentNi,
@@ -125,16 +154,17 @@ export async function runDue({ entries, renditions, registry, ruleSet, adapters,
           sourceObservedAt: sourceWitness.observedAt, sourceClaimsChecked: sourceWitness.claimsChecked });
         published += 1;
       } catch (error) {
-        const message = redact(error.message);
-        const status = Number(error.status ?? 0);
-        if (status === 429) { record('rate-limited', { reason: message, retryAfterSeconds: error.retryAfterSeconds ?? 900, retryNotBefore: new Date(nowMs + (error.retryAfterSeconds ?? 900) * 1000).toISOString() }); break; }
-        if (status === 401 || status === 403) { out.hold = `platform answered ${status}: ${message}`; record('held', { reason: out.hold }); break; }
-        if (status >= 500 || status === 0) {
-          const attempts = history.filter((line) => line.renditionId === entry.renditionId && line.status === 'retry').length + 1;
-          if (attempts >= MAX_ATTEMPTS) { out.hold = `platform failed ${attempts} times: ${message}`; record('held', { reason: out.hold }); break; }
-          record('retry', { reason: message, attempts }); break;
-        }
-        record('refused', { reason: `platform rejected the post (${status}): ${message}` });
+        // A request can be accepted remotely even when the client sees an
+        // error or no response. The durable pre-effect reservation survives
+        // process death, and no status below schedules another write.
+        const status = Number(error?.status ?? 0);
+        record('outcome-unknown', { effectId: effect.id,
+          reason: 'provider-outcome-unverified-needs-independent-reconciliation',
+          providerStatusClass: Number.isInteger(status) && status >= 100 && status <= 599 ?
+            String(Math.floor(status / 100)) + 'xx' : 'unknown',
+          detail: redact(error?.message ?? String(error)),
+        });
+        break;
       }
     }
     return out;
