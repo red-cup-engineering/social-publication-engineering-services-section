@@ -21,5 +21,6 @@ export * from './editorial.mjs';
 export * from './post-provenance.mjs';
 export * from './handles.mjs';
 export * from './profile-readback.mjs';
+export * from './public-copy-decision.mjs';
 export * from './post-readback.mjs';
 export * from './rules-evidence.mjs';
