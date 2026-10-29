@@ -29,6 +29,7 @@ import { compilePhrases, editorialReport, profileFor, urlsIn } from '../src/synd
 import { buildPostManifest, footerFor, signPostManifest, splitProvenanceFooter, verifyPostManifest } from '../src/syndication/post-provenance.mjs';
 import { PROBES, probeHandle } from '../src/syndication/handles.mjs';
 import { readBlueskyProfileDecision } from '../src/syndication/profile-readback.mjs';
+import { verifyPublicCopyDecision, publicCopyHandoff } from '../src/syndication/public-copy-decision.mjs';
 import { checkEvidence, driftCheck, mergeRuleSets } from '../src/syndication/rules-evidence.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -200,6 +201,38 @@ async function main() {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       break;
     }
+    case 'decision-check':
+    case 'decision-handoff': {
+      // The original enterprise supplies both exact sources; Engineering does
+      // not discover private decisions or infer appointment/recipient rights.
+      const decision = readJson(positional[0] ?? fail('decision-check|decision-handoff <decision.json> <public-copy.json> --copy-locator exact/source/path'));
+      const copy = readJson(positional[1] ?? fail('public-copy source file required'));
+      const copyLocator = flags['copy-locator'] ?? fail('--copy-locator exact original relative source path required');
+      let checked;
+      try {
+        checked = verifyPublicCopyDecision({ decision, copy, copyLocator });
+        if (command === 'decision-check') {
+          process.stdout.write(JSON.stringify(checked, null, 2) + '\\n');
+          break;
+        }
+        const recipients = typeof flags.recipients === 'string' ? flags.recipients.split(',') : [];
+        const handoff = publicCopyHandoff({
+          decision, copy, copyLocator, recipientCharacterIds: recipients,
+          sourceRepository: flags['source-repo'],
+          decisionRecordLocator: flags['decision-locator'],
+        });
+        const out = flags.out ?? fail('--out path required; no account side effect is made');
+        writeFileSync(out, JSON.stringify(handoff, null, 2) + '\\n');
+        process.stdout.write(JSON.stringify({
+          sourceDecision: checked.decisionId,
+          sourceCopyNi: checked.textNi,
+          handoffWritten: true, verifiedCompletion: false,
+        }, null, 2) + '\\n');
+      } catch (error) {
+        fail('refused: original public-copy decision/custody/byte integrity check failed', 3);
+      }
+      break;
+    }
     case 'profile-readback': {
       // The existing public-copy record owns the expected bytes, pinned DID and
       // earlier observation. No account key, password, session or mutation.
@@ -246,7 +279,7 @@ async function main() {
       break;
     }
     default:
-      fail('commands: gate | copy | profile-readback | finalize | links | provenance | verify | handle | rules | drift | keygen');
+      fail('commands: gate | copy | decision-check | decision-handoff | profile-readback | finalize | links | provenance | verify | handle | rules | drift | keygen');
   }
 }
 if (import.meta.url === `file://${process.argv[1]}`) main().catch((error) => fail(String(error.stack ?? error), 2));
