@@ -212,7 +212,7 @@ async function main() {
       try {
         checked = verifyPublicCopyDecision({ decision, copy, copyLocator });
         if (command === 'decision-check') {
-          process.stdout.write(JSON.stringify(checked, null, 2) + '\\n');
+          process.stdout.write(JSON.stringify(checked, null, 2) + '\n');
           break;
         }
         const recipients = typeof flags.recipients === 'string' ? flags.recipients.split(',') : [];
@@ -222,12 +222,12 @@ async function main() {
           decisionRecordLocator: flags['decision-locator'],
         });
         const out = flags.out ?? fail('--out path required; no account side effect is made');
-        writeFileSync(out, JSON.stringify(handoff, null, 2) + '\\n');
+        writeFileSync(out, JSON.stringify(handoff, null, 2) + '\n');
         process.stdout.write(JSON.stringify({
           sourceDecision: checked.decisionId,
           sourceCopyNi: checked.textNi,
           handoffWritten: true, verifiedCompletion: false,
-        }, null, 2) + '\\n');
+        }, null, 2) + '\n');
       } catch (error) {
         fail('refused: original public-copy decision/custody/byte integrity check failed', 3);
       }
