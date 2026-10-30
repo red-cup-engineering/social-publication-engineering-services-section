@@ -13,7 +13,7 @@
  *   profile-readback  compare a source-admitted Bluesky public-copy decision with the public AppView
  *   rules       check the verified PlatformRuleSet against its dated terms records
  *   drift       re-fetch a terms record's pages and compare hashes
- *   keygen      make a TEST-ONLY Ed25519 key (production keys are an owner decision and are never made here)
+ *   signup-packets  compose proposed, account-holder-only packets from caller source data\n *   keygen      make a TEST-ONLY Ed25519 key (production keys are an owner decision and are never made here)
  *
  * PostCandidateSet: { type:'PostCandidateSet', version:1, brand, items:[ContentItem + {claims, sources, ai,
  *   authoring, repository, disclosureDecision, renditions:[{platform, text, title?, media?}]}] }
@@ -30,6 +30,7 @@ import { buildPostManifest, footerFor, signPostManifest, splitProvenanceFooter, 
 import { PROBES, probeHandle } from '../src/syndication/handles.mjs';
 import { readBlueskyProfileDecision } from '../src/syndication/profile-readback.mjs';
 import { verifyPublicCopyDecision, publicCopyHandoff } from '../src/syndication/public-copy-decision.mjs';
+import { composeSignupPackets, renderSignupPackets } from '../src/syndication/signup-packets.mjs';
 import { checkEvidence, driftCheck, mergeRuleSets } from '../src/syndication/rules-evidence.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -233,6 +234,50 @@ async function main() {
       }
       break;
     }
+    case 'signup-packets': {
+      // A data-only Group/public consumer supplies its own brand, terms, handle checks
+      // and complete account-holder instructions. No sign-up or network call occurs.
+      const required = (key) => typeof flags[key] === 'string' ? flags[key] : fail('refused: --' + key + ' is required', 3);
+      const brandDir = required('brands');
+      const termsDir = required('terms');
+      const brands = {};
+      for (const name of readdirSync(brandDir).filter((name) => name.endsWith('.jsonld'))) {
+        const value = readJson(join(brandDir, name));
+        if (typeof value.identifier !== 'string' || brands[value.identifier]) fail('refused: missing/duplicate original brand identifier', 3);
+        brands[value.identifier] = value;
+      }
+      const terms = {};
+      for (const name of readdirSync(termsDir).filter((name) => name.endsWith('.json'))) {
+        const value = readJson(join(termsDir, name));
+        const platform = name.slice(0, -5);
+        if (terms[platform]) fail('refused: duplicate platform terms', 3);
+        terms[platform] = value;
+      }
+      let documents;
+      try {
+        documents = composeSignupPackets({
+          brands, terms, plan: readJson(required('plan')),
+          handleChecks: readJson(required('handles')),
+          policy: readJson(required('policy')), brandOnly: flags.brand,
+        });
+      } catch (error) {
+        fail('refused: invalid original signup sources: ' + String(error.message).slice(0, 200), 3);
+      }
+      const output = required('out');
+      mkdirSync(output, { recursive: true });
+      for (const document of documents) {
+        writeFileSync(join(output, document.brand + '.json'), JSON.stringify(document, null, 2) + '\n');
+        writeFileSync(join(output, document.brand + '.md'), renderSignupPackets(document));
+      }
+      process.stdout.write(JSON.stringify({
+        status: 'proposed', completed: false, accountEffects: 0,
+        brands: documents.map((document) => ({
+          brand: document.brand, packets: document.packets.length,
+          problems: document.packets.reduce((n, packet) => n + packet.problems.length, 0),
+        })),
+      }, null, 2) + '\n');
+      break;
+    }
     case 'profile-readback': {
       // The existing public-copy record owns the expected bytes, pinned DID and
       // earlier observation. No account key, password, session or mutation.
@@ -279,7 +324,7 @@ async function main() {
       break;
     }
     default:
-      fail('commands: gate | copy | decision-check | decision-handoff | profile-readback | finalize | links | provenance | verify | handle | rules | drift | keygen');
+      fail('commands: gate | copy | decision-check | decision-handoff | profile-readback | finalize | links | provenance | verify | handle | rules | drift | signup-packets | keygen');
   }
 }
 if (import.meta.url === `file://${process.argv[1]}`) main().catch((error) => fail(String(error.stack ?? error), 2));
