@@ -268,7 +268,7 @@ async function main() {
       const links = required('links');
       let set;
       try { set = readJson(candidatePath); } catch { fail('refused: invalid original candidate JSON', 3); }
-      if (set?.type !== 'PostCandidateSet' || !Array.isArray(set.items)) fail('refused: not a PostCandidateSet', 3);
+      if (set?.type !== 'PostCandidateSet' || !Array.isArray(set.items) || set.items.length === 0) fail('refused: no valid PostCandidateSet items', 3);
       const run = (...args) => spawnSync(process.execPath, [join(here, 'brand-presence.mjs'), ...args], { encoding: 'utf8' });
       if (flags.finalize === true) {
         const done = run('finalize', candidatePath);
@@ -284,6 +284,9 @@ async function main() {
     case 'provenance-build': {
       const required = (key) => typeof flags[key] === 'string' ? flags[key] : fail('refused: --' + key + ' is required', 3);
       const candidates = required('candidates'), profiles = required('brands'), links = required('links'), output = required('out');
+      let candidateSet;
+      try { candidateSet = readJson(candidates); } catch { fail('refused: original post source unreadable', 3); }
+      if (candidateSet?.type !== 'PostCandidateSet' || !Array.isArray(candidateSet.items) || candidateSet.items.length === 0) fail('refused: no original post candidates', 3);
       const run = (...args) => spawnSync(process.execPath, [join(here, 'brand-presence.mjs'), ...args], { encoding: 'utf8' });
       const gate = run('gate', candidates, '--profiles', profiles, '--links', links, '--require-links', '--provenance-mode', 'design');
       if (gate.status !== 0) {
@@ -308,39 +311,43 @@ async function main() {
       break;
     }
     case 'signup-packets': {
-      // A data-only Group/public consumer supplies its own brand, terms, handle checks
-      // and complete account-holder instructions. No sign-up or network call occurs.
+      // Customer-supplied original data only; pre-render all packets before writing
+      // any output, and refuse malformed files without inventing account rights.
       const required = (key) => typeof flags[key] === 'string' ? flags[key] : fail('refused: --' + key + ' is required', 3);
-      const brandDir = required('brands');
-      const termsDir = required('terms');
-      const brands = {};
-      for (const name of readdirSync(brandDir).filter((name) => name.endsWith('.jsonld'))) {
-        const value = readJson(join(brandDir, name));
-        if (typeof value.identifier !== 'string' || brands[value.identifier]) fail('refused: missing/duplicate original brand identifier', 3);
-        brands[value.identifier] = value;
-      }
-      const terms = {};
-      for (const name of readdirSync(termsDir).filter((name) => name.endsWith('.json'))) {
-        const value = readJson(join(termsDir, name));
-        const platform = name.slice(0, -5);
-        if (terms[platform]) fail('refused: duplicate platform terms', 3);
-        terms[platform] = value;
-      }
-      let documents;
+      let documents, outputs;
       try {
+        const brandDir = required('brands'), termsDir = required('terms');
+        const brands = {};
+        for (const name of readdirSync(brandDir).filter((name) => name.endsWith('.jsonld'))) {
+          const value = readJson(join(brandDir, name));
+          if (typeof value.identifier !== 'string' || brands[value.identifier]) throw new TypeError('missing or duplicate original brand identifier');
+          brands[value.identifier] = value;
+        }
+        const terms = {};
+        for (const name of readdirSync(termsDir).filter((name) => name.endsWith('.json'))) {
+          const value = readJson(join(termsDir, name));
+          const platform = name.slice(0, -5);
+          if (terms[platform]) throw new TypeError('duplicate platform terms');
+          terms[platform] = value;
+        }
         documents = composeSignupPackets({
           brands, terms, plan: readJson(required('plan')),
           handleChecks: readJson(required('handles')),
           policy: readJson(required('policy')), brandOnly: flags.brand,
         });
+        outputs = documents.map((document) => ({
+          filename: document.brand,
+          json: JSON.stringify(document, null, 2) + '\n',
+          markdown: renderSignupPackets(document),
+        }));
       } catch (error) {
         fail('refused: invalid original signup sources: ' + String(error.message).slice(0, 200), 3);
       }
       const output = required('out');
       mkdirSync(output, { recursive: true });
-      for (const document of documents) {
-        writeFileSync(join(output, document.brand + '.json'), JSON.stringify(document, null, 2) + '\n');
-        writeFileSync(join(output, document.brand + '.md'), renderSignupPackets(document));
+      for (const file of outputs) {
+        writeFileSync(join(output, file.filename + '.json'), file.json);
+        writeFileSync(join(output, file.filename + '.md'), file.markdown);
       }
       process.stdout.write(JSON.stringify({
         status: 'proposed', completed: false, accountEffects: 0,
