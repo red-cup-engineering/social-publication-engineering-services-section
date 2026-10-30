@@ -4,6 +4,8 @@
  * accounts. It posts nothing, signs up for nothing and holds no credential.
  *
  *   gate        run the editorial gate over a PostCandidateSet (exit 3 on any refusal)
+ *   gate-post   the original Group-gate contract with optional finalize and design/live distinction
+ *   provenance-build  require the original gate first and a key decision for production signing
  *   copy        run the editorial gate over profile copy (a bio, banner line, pinned text, About text) that is not a post
  *   finalize    append each rendition's provenance line (idempotent) and write the file back
  *   links       check every URL a PostCandidateSet uses and record the answers
@@ -13,13 +15,14 @@
  *   profile-readback  compare a source-admitted Bluesky public-copy decision with the public AppView
  *   rules       check the verified PlatformRuleSet against its dated terms records
  *   drift       re-fetch a terms record's pages and compare hashes
- *   keygen      make a TEST-ONLY Ed25519 key (production keys are an owner decision and are never made here)
+ *   handles-plan  run read-only public handle checks for a caller's multi-brand plan\n *   signup-packets  compose proposed, account-holder-only packets from caller source data\n *   keygen      make a TEST-ONLY Ed25519 key (production keys are an owner decision and are never made here)
  *
  * PostCandidateSet: { type:'PostCandidateSet', version:1, brand, items:[ContentItem + {claims, sources, ai,
  *   authoring, repository, disclosureDecision, renditions:[{platform, text, title?, media?}]}] }
  * Exit codes: 0 ok, 3 refusal or failed verification, 2 usage error.
  */
 import { createPrivateKey, generateKeyPairSync } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, chmodSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -27,9 +30,10 @@ import { admitPlatformRuleSet } from '../src/syndication/platform-rules.mjs';
 import { niOfJson } from '../src/syndication/canonical.mjs';
 import { compilePhrases, editorialReport, profileFor, urlsIn } from '../src/syndication/editorial.mjs';
 import { buildPostManifest, footerFor, signPostManifest, splitProvenanceFooter, verifyPostManifest } from '../src/syndication/post-provenance.mjs';
-import { PROBES, probeHandle } from '../src/syndication/handles.mjs';
+import { PROBES, probeHandle, probeHandlePlan } from '../src/syndication/handles.mjs';
 import { readBlueskyProfileDecision } from '../src/syndication/profile-readback.mjs';
 import { verifyPublicCopyDecision, publicCopyHandoff } from '../src/syndication/public-copy-decision.mjs';
+import { composeSignupPackets, renderSignupPackets } from '../src/syndication/signup-packets.mjs';
 import { checkEvidence, driftCheck, mergeRuleSets } from '../src/syndication/rules-evidence.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -233,6 +237,127 @@ async function main() {
       }
       break;
     }
+    case 'handles-plan': {
+      // The original Group brand/platform plan is caller-owned data. These are
+      // unauthenticated public probes, never a signup or a handle reservation.
+      const required = (key) => typeof flags[key] === 'string' ? flags[key] : fail('refused: --' + key + ' is required', 3);
+      let probes;
+      try {
+        const plan = readJson(required('plan'));
+        const pauseMs = Number(flags['pause-ms'] ?? 400);
+        probes = await probeHandlePlan(plan, {
+          brandOnly: flags.brand, platformOnly: flags.platform, pauseMs,
+          checkedOn: flags['checked-on'] ?? new Date(nowMs).toISOString().slice(0, 10),
+        });
+      } catch (error) {
+        fail('refused: invalid source plan or unqualified handle probe: ' + String(error.message).slice(0, 200), 3);
+      }
+      writeFileSync(required('out'), JSON.stringify(probes, null, 2) + '\n');
+      const counts = Object.fromEntries(['taken', 'free-looking', 'unknown', 'not-probed']
+        .map((result) => [result, probes.results.filter((entry) => entry.result === result).length]));
+      process.stdout.write(JSON.stringify({ completed: false, reservations: 0,
+        probes: probes.results.length, counts }, null, 2) + '\n');
+      break;
+    }
+    case 'gate-post': {
+      // The original Group gate wrapper's exact candidate, design/live and optional
+      // idempotent finalize contract, now performed at the original Engineering owner.
+      const required = (key) => typeof flags[key] === 'string' ? flags[key] : fail('refused: --' + key + ' is required', 3);
+      const candidatePath = required('candidates');
+      const profiles = required('brands');
+      const links = required('links');
+      let set;
+      try { set = readJson(candidatePath); } catch { fail('refused: invalid original candidate JSON', 3); }
+      if (set?.type !== 'PostCandidateSet' || !Array.isArray(set.items) || set.items.length === 0) fail('refused: no valid PostCandidateSet items', 3);
+      const run = (...args) => spawnSync(process.execPath, [join(here, 'brand-presence.mjs'), ...args], { encoding: 'utf8' });
+      if (flags.finalize === true) {
+        const done = run('finalize', candidatePath);
+        if (done.status !== 0) fail('refused: finalize failed: ' + String(done.stderr).slice(0, 200), 3);
+      }
+      const result = run('gate', candidatePath, '--profiles', profiles, '--links', links,
+        '--require-links', '--provenance-mode', flags.live === true ? 'live' : 'design');
+      if (result.stdout) process.stdout.write(result.stdout);
+      if (result.stderr) process.stderr.write(result.stderr);
+      if (result.status !== 0) process.exit(3);
+      break;
+    }
+    case 'provenance-build': {
+      const required = (key) => typeof flags[key] === 'string' ? flags[key] : fail('refused: --' + key + ' is required', 3);
+      const candidates = required('candidates'), profiles = required('brands'), links = required('links'), output = required('out');
+      let candidateSet;
+      try { candidateSet = readJson(candidates); } catch { fail('refused: original post source unreadable', 3); }
+      if (candidateSet?.type !== 'PostCandidateSet' || !Array.isArray(candidateSet.items) || candidateSet.items.length === 0) fail('refused: no original post candidates', 3);
+      const run = (...args) => spawnSync(process.execPath, [join(here, 'brand-presence.mjs'), ...args], { encoding: 'utf8' });
+      const gate = run('gate', candidates, '--profiles', profiles, '--links', links, '--require-links', '--provenance-mode', 'design');
+      if (gate.status !== 0) {
+        if (gate.stdout) process.stdout.write(gate.stdout);
+        fail('refused: original editorial gate failed; no provenance built', 3);
+      }
+      const args = ['provenance', candidates, '--out', output, '--profiles', profiles, '--links', links, '--provenance-mode', 'design'];
+      if (flags.key) {
+        const keyId = required('key-id');
+        required('key');
+        if (!keyId.startsWith('test-')) {
+          let decision;
+          try { decision = readJson(required('key-decision')); } catch { fail('refused: original production key decision unreadable', 3); }
+          if (decision?.kind !== 'decision' || !decision.authority?.basis) fail('refused: no original production key-custody authority', 3);
+        }
+        args.push('--key', flags.key, '--key-id', keyId);
+      }
+      const built = run(...args);
+      if (built.stdout) process.stdout.write(built.stdout);
+      if (built.stderr) process.stderr.write(built.stderr);
+      if (built.status !== 0) process.exit(3);
+      break;
+    }
+    case 'signup-packets': {
+      // Customer-supplied original data only; pre-render all packets before writing
+      // any output, and refuse malformed files without inventing account rights.
+      const required = (key) => typeof flags[key] === 'string' ? flags[key] : fail('refused: --' + key + ' is required', 3);
+      let documents, outputs;
+      try {
+        const brandDir = required('brands'), termsDir = required('terms');
+        const brands = {};
+        for (const name of readdirSync(brandDir).filter((name) => name.endsWith('.jsonld'))) {
+          const value = readJson(join(brandDir, name));
+          if (typeof value.identifier !== 'string' || brands[value.identifier]) throw new TypeError('missing or duplicate original brand identifier');
+          brands[value.identifier] = value;
+        }
+        const terms = {};
+        for (const name of readdirSync(termsDir).filter((name) => name.endsWith('.json'))) {
+          const value = readJson(join(termsDir, name));
+          const platform = name.slice(0, -5);
+          if (terms[platform]) throw new TypeError('duplicate platform terms');
+          terms[platform] = value;
+        }
+        documents = composeSignupPackets({
+          brands, terms, plan: readJson(required('plan')),
+          handleChecks: readJson(required('handles')),
+          policy: readJson(required('policy')), brandOnly: flags.brand,
+        });
+        outputs = documents.map((document) => ({
+          filename: document.brand,
+          json: JSON.stringify(document, null, 2) + '\n',
+          markdown: renderSignupPackets(document),
+        }));
+      } catch (error) {
+        fail('refused: invalid original signup sources: ' + String(error.message).slice(0, 200), 3);
+      }
+      const output = required('out');
+      mkdirSync(output, { recursive: true });
+      for (const file of outputs) {
+        writeFileSync(join(output, file.filename + '.json'), file.json);
+        writeFileSync(join(output, file.filename + '.md'), file.markdown);
+      }
+      process.stdout.write(JSON.stringify({
+        status: 'proposed', completed: false, accountEffects: 0,
+        brands: documents.map((document) => ({
+          brand: document.brand, packets: document.packets.length,
+          problems: document.packets.reduce((n, packet) => n + packet.problems.length, 0),
+        })),
+      }, null, 2) + '\n');
+      break;
+    }
     case 'profile-readback': {
       // The existing public-copy record owns the expected bytes, pinned DID and
       // earlier observation. No account key, password, session or mutation.
@@ -257,6 +382,12 @@ async function main() {
       for (const f of readdirSync(recordsDir).filter((n) => n.endsWith('.json'))) { const d = readJson(join(recordsDir, f)); if (d.id) records[d.id] = d; }
       const { verified, merged } = loadRuleSet(flags);
       const result = checkEvidence(verified, records, { nowMs });
+      if (flags.platform) {
+        const rule = verified.rules?.[flags.platform];
+        if (!rule?.checkedOn) fail('refused: no verified rule for ' + flags.platform, 3);
+        if (rule.automation?.mode === 'prohibited') fail('refused: platform prohibits automation', 3);
+        if (flags.live === true && rule.automation?.mode === 'manual-only') fail('refused: manual-only platform requires the original account holder', 3);
+      }
       process.stdout.write(`${JSON.stringify({ status: merged.status, platforms: Object.keys(merged.rules).length, ...result }, null, 2)}\n`);
       process.exit(result.problems.length === 0 && result.stale.length === 0 ? 0 : 3);
       break;
@@ -279,7 +410,7 @@ async function main() {
       break;
     }
     default:
-      fail('commands: gate | copy | decision-check | decision-handoff | profile-readback | finalize | links | provenance | verify | handle | rules | drift | keygen');
+      fail('commands: gate | gate-post | provenance-build | handles-plan | copy | decision-check | decision-handoff | profile-readback | finalize | links | provenance | verify | handle | rules | drift | signup-packets | keygen');
   }
 }
 if (import.meta.url === `file://${process.argv[1]}`) main().catch((error) => fail(String(error.stack ?? error), 2));
