@@ -15,7 +15,7 @@
  *   profile-readback  compare a source-admitted Bluesky public-copy decision with the public AppView
  *   rules       check the verified PlatformRuleSet against its dated terms records
  *   drift       re-fetch a terms record's pages and compare hashes
- *   signup-packets  compose proposed, account-holder-only packets from caller source data\n *   keygen      make a TEST-ONLY Ed25519 key (production keys are an owner decision and are never made here)
+ *   handles-plan  run read-only public handle checks for a caller's multi-brand plan\n *   signup-packets  compose proposed, account-holder-only packets from caller source data\n *   keygen      make a TEST-ONLY Ed25519 key (production keys are an owner decision and are never made here)
  *
  * PostCandidateSet: { type:'PostCandidateSet', version:1, brand, items:[ContentItem + {claims, sources, ai,
  *   authoring, repository, disclosureDecision, renditions:[{platform, text, title?, media?}]}] }
@@ -30,7 +30,7 @@ import { admitPlatformRuleSet } from '../src/syndication/platform-rules.mjs';
 import { niOfJson } from '../src/syndication/canonical.mjs';
 import { compilePhrases, editorialReport, profileFor, urlsIn } from '../src/syndication/editorial.mjs';
 import { buildPostManifest, footerFor, signPostManifest, splitProvenanceFooter, verifyPostManifest } from '../src/syndication/post-provenance.mjs';
-import { PROBES, probeHandle } from '../src/syndication/handles.mjs';
+import { PROBES, probeHandle, probeHandlePlan } from '../src/syndication/handles.mjs';
 import { readBlueskyProfileDecision } from '../src/syndication/profile-readback.mjs';
 import { verifyPublicCopyDecision, publicCopyHandoff } from '../src/syndication/public-copy-decision.mjs';
 import { composeSignupPackets, renderSignupPackets } from '../src/syndication/signup-packets.mjs';
@@ -237,6 +237,28 @@ async function main() {
       }
       break;
     }
+    case 'handles-plan': {
+      // The original Group brand/platform plan is caller-owned data. These are
+      // unauthenticated public probes, never a signup or a handle reservation.
+      const required = (key) => typeof flags[key] === 'string' ? flags[key] : fail('refused: --' + key + ' is required', 3);
+      let probes;
+      try {
+        const plan = readJson(required('plan'));
+        const pauseMs = Number(flags['pause-ms'] ?? 400);
+        probes = await probeHandlePlan(plan, {
+          brandOnly: flags.brand, platformOnly: flags.platform, pauseMs,
+          checkedOn: flags['checked-on'] ?? new Date(nowMs).toISOString().slice(0, 10),
+        });
+      } catch (error) {
+        fail('refused: invalid source plan or unqualified handle probe: ' + String(error.message).slice(0, 200), 3);
+      }
+      writeFileSync(required('out'), JSON.stringify(probes, null, 2) + '\n');
+      const counts = Object.fromEntries(['taken', 'free-looking', 'unknown', 'not-probed']
+        .map((result) => [result, probes.results.filter((entry) => entry.result === result).length]));
+      process.stdout.write(JSON.stringify({ completed: false, reservations: 0,
+        probes: probes.results.length, counts }, null, 2) + '\n');
+      break;
+    }
     case 'gate-post': {
       // The original Group gate wrapper's exact candidate, design/live and optional
       // idempotent finalize contract, now performed at the original Engineering owner.
@@ -381,7 +403,7 @@ async function main() {
       break;
     }
     default:
-      fail('commands: gate | gate-post | provenance-build | copy | decision-check | decision-handoff | profile-readback | finalize | links | provenance | verify | handle | rules | drift | signup-packets | keygen');
+      fail('commands: gate | gate-post | provenance-build | handles-plan | copy | decision-check | decision-handoff | profile-readback | finalize | links | provenance | verify | handle | rules | drift | signup-packets | keygen');
   }
 }
 if (import.meta.url === `file://${process.argv[1]}`) main().catch((error) => fail(String(error.stack ?? error), 2));
