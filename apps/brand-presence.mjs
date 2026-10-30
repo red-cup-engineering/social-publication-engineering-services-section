@@ -4,6 +4,8 @@
  * accounts. It posts nothing, signs up for nothing and holds no credential.
  *
  *   gate        run the editorial gate over a PostCandidateSet (exit 3 on any refusal)
+ *   gate-post   the original Group-gate contract with optional finalize and design/live distinction
+ *   provenance-build  require the original gate first and a key decision for production signing
  *   copy        run the editorial gate over profile copy (a bio, banner line, pinned text, About text) that is not a post
  *   finalize    append each rendition's provenance line (idempotent) and write the file back
  *   links       check every URL a PostCandidateSet uses and record the answers
@@ -20,6 +22,7 @@
  * Exit codes: 0 ok, 3 refusal or failed verification, 2 usage error.
  */
 import { createPrivateKey, generateKeyPairSync } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, chmodSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -234,6 +237,54 @@ async function main() {
       }
       break;
     }
+    case 'gate-post': {
+      // The original Group gate wrapper's exact candidate, design/live and optional
+      // idempotent finalize contract, now performed at the original Engineering owner.
+      const required = (key) => typeof flags[key] === 'string' ? flags[key] : fail('refused: --' + key + ' is required', 3);
+      const candidatePath = required('candidates');
+      const profiles = required('brands');
+      const links = required('links');
+      let set;
+      try { set = readJson(candidatePath); } catch { fail('refused: invalid original candidate JSON', 3); }
+      if (set?.type !== 'PostCandidateSet' || !Array.isArray(set.items)) fail('refused: not a PostCandidateSet', 3);
+      const run = (...args) => spawnSync(process.execPath, [join(here, 'brand-presence.mjs'), ...args], { encoding: 'utf8' });
+      if (flags.finalize === true) {
+        const done = run('finalize', candidatePath);
+        if (done.status !== 0) fail('refused: finalize failed: ' + String(done.stderr).slice(0, 200), 3);
+      }
+      const result = run('gate', candidatePath, '--profiles', profiles, '--links', links,
+        '--require-links', '--provenance-mode', flags.live === true ? 'live' : 'design');
+      if (result.stdout) process.stdout.write(result.stdout);
+      if (result.stderr) process.stderr.write(result.stderr);
+      if (result.status !== 0) process.exit(3);
+      break;
+    }
+    case 'provenance-build': {
+      const required = (key) => typeof flags[key] === 'string' ? flags[key] : fail('refused: --' + key + ' is required', 3);
+      const candidates = required('candidates'), profiles = required('brands'), links = required('links'), output = required('out');
+      const run = (...args) => spawnSync(process.execPath, [join(here, 'brand-presence.mjs'), ...args], { encoding: 'utf8' });
+      const gate = run('gate', candidates, '--profiles', profiles, '--links', links, '--require-links', '--provenance-mode', 'design');
+      if (gate.status !== 0) {
+        if (gate.stdout) process.stdout.write(gate.stdout);
+        fail('refused: original editorial gate failed; no provenance built', 3);
+      }
+      const args = ['provenance', candidates, '--out', output, '--profiles', profiles, '--links', links, '--provenance-mode', 'design'];
+      if (flags.key) {
+        const keyId = required('key-id');
+        required('key');
+        if (!keyId.startsWith('test-')) {
+          let decision;
+          try { decision = readJson(required('key-decision')); } catch { fail('refused: original production key decision unreadable', 3); }
+          if (decision?.kind !== 'decision' || !decision.authority?.basis) fail('refused: no original production key-custody authority', 3);
+        }
+        args.push('--key', flags.key, '--key-id', keyId);
+      }
+      const built = run(...args);
+      if (built.stdout) process.stdout.write(built.stdout);
+      if (built.stderr) process.stderr.write(built.stderr);
+      if (built.status !== 0) process.exit(3);
+      break;
+    }
     case 'signup-packets': {
       // A data-only Group/public consumer supplies its own brand, terms, handle checks
       // and complete account-holder instructions. No sign-up or network call occurs.
@@ -302,6 +353,12 @@ async function main() {
       for (const f of readdirSync(recordsDir).filter((n) => n.endsWith('.json'))) { const d = readJson(join(recordsDir, f)); if (d.id) records[d.id] = d; }
       const { verified, merged } = loadRuleSet(flags);
       const result = checkEvidence(verified, records, { nowMs });
+      if (flags.platform) {
+        const rule = verified.rules?.[flags.platform];
+        if (!rule?.checkedOn) fail('refused: no verified rule for ' + flags.platform, 3);
+        if (rule.automation?.mode === 'prohibited') fail('refused: platform prohibits automation', 3);
+        if (flags.live === true && rule.automation?.mode === 'manual-only') fail('refused: manual-only platform requires the original account holder', 3);
+      }
       process.stdout.write(`${JSON.stringify({ status: merged.status, platforms: Object.keys(merged.rules).length, ...result }, null, 2)}\n`);
       process.exit(result.problems.length === 0 && result.stale.length === 0 ? 0 : 3);
       break;
@@ -324,7 +381,7 @@ async function main() {
       break;
     }
     default:
-      fail('commands: gate | copy | decision-check | decision-handoff | profile-readback | finalize | links | provenance | verify | handle | rules | drift | signup-packets | keygen');
+      fail('commands: gate | gate-post | provenance-build | copy | decision-check | decision-handoff | profile-readback | finalize | links | provenance | verify | handle | rules | drift | signup-packets | keygen');
   }
 }
 if (import.meta.url === `file://${process.argv[1]}`) main().catch((error) => fail(String(error.stack ?? error), 2));
