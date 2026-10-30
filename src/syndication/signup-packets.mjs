@@ -151,7 +151,7 @@ export function renderSignupPackets(doc) {
     out.push(`- AI-content rule: ${p.platformRules['ai-content-disclosure'].value} (${p.platformRules['ai-content-disclosure'].status}). ${p.platformRules['ai-content-disclosure'].detail ?? ''}`);
     if (p.existingAccount) out.push(`- Existing account found: ${p.existingAccount.handle} (${p.existingAccount.did}), ${p.existingAccount.postsCount} posts, ${p.existingAccount.followersCount} follower(s), observed ${p.existingAccount.observedOn}.`);
     if (p.ownerDecisions.length) out.push('', '**Before you start:**', ...p.ownerDecisions.map((d) => `- ${d}`));
-    if (p.hardRuleConflicts.length) out.push('', '**Conflicts with the account holder's rules:**', ...p.hardRuleConflicts.map((d) => `- ${d}`));
+    if (p.hardRuleConflicts.length) out.push('', '**Conflicts with the account holder\'s rules:**', ...p.hardRuleConflicts.map((d) => `- ${d}`));
     out.push('', '**Steps for the owner**', '', 'Before:', ...(p.steps.before.length ? p.steps.before.map((s, i) => `${i + 1}. ${s}`) : ['(nothing: the account exists)']), '', 'On the platform (steps marked [unverified flow] were not confirmed against the live sign-up):', ...p.steps.onThePlatform.map((s, i) => `${i + 1}. ${s}`), '', 'After:', ...p.steps.after.map((s, i) => `${i + 1}. ${s}`), '', 'Before the first post:', ...p.steps.readinessBeforeFirstPost.map((s) => `- ${s}`), '');
     out.push('Sources read:', ...p.sources.map((s) => `- ${s.title}: ${s.url}${s.sha256 ? ` (sha256 ${s.sha256.slice(0, 16)}...)` : ''}`), '');
   }
