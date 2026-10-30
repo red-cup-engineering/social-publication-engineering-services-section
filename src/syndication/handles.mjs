@@ -118,3 +118,57 @@ export function candidatesFor(brand, { maxLength = 30, extra = [] } = {}) {
   const set = new Set([words.join(''), words.join('-'), words.join('_'), ...extra]);
   return [...set].filter((name) => name.length >= 2 && name.length <= maxLength);
 }
+
+
+/**
+ * The existing Group multi-brand handle check, parameterized at the original
+ * Engineering owner. Public probes only; 'free-looking' is never a reservation.
+ * A caller supplies its original plan and observed date, never its credentials.
+ */
+export async function probeHandlePlan(plan, {
+  brandOnly = null, platformOnly = null, checkedOn,
+  pauseMs = 400, probe = probeHandle,
+} = {}) {
+  if (!plan || !plan.platforms || typeof plan.platforms !== 'object' ||
+      typeof checkedOn !== 'string' || !/^\d{4}-\d{2}-\d{2}$/u.test(checkedOn) ||
+      !Number.isInteger(pauseMs) || pauseMs < 0 || pauseMs > 120000 ||
+      typeof probe !== 'function') {
+    throw new TypeError('source plan, observation date and bounded probe interval are required');
+  }
+  const aliases = { 'dev-to': 'devto', 'hugging-face': 'huggingface',
+    'hacker-news': 'hackernews', 'activitypub-self-hosted': 'mastodon' };
+  const results = [];
+  for (const [brand, platforms] of Object.entries(plan.platforms)) {
+    if (brandOnly && brandOnly !== brand) continue;
+    if (!platforms || typeof platforms !== 'object') throw new TypeError('malformed brand platforms');
+    for (const [platform, entry] of Object.entries(platforms)) {
+      if (platformOnly && platformOnly !== platform) continue;
+      if (!entry || typeof entry !== 'object') throw new TypeError('malformed platform entry');
+      if (entry.wave === 'human-only' || entry.handleCandidates === undefined) continue;
+      if (!Array.isArray(entry.handleCandidates)) throw new TypeError('handle candidates must be a list');
+      for (const handle of entry.handleCandidates) {
+        if (typeof handle !== 'string' || !handle.trim() || handle.length > 255) {
+          throw new TypeError('invalid candidate handle');
+        }
+        const isDomain = platform === 'bluesky' && handle.includes('.');
+        const probeName = platform === 'bluesky' && isDomain ? handle.replace(/\.bsky\.social$/u, '') : handle;
+        const outcome = await probe(aliases[platform] ?? platform, probeName, {
+          options: { instance: entry.instance, domain: isDomain ? handle : undefined },
+        });
+        if (!outcome || !HANDLE_RESULTS.includes(outcome.result)) {
+          throw new TypeError('original public handle probe returned no admissible outcome');
+        }
+        results.push({
+          brand, platform, handle, result: outcome.result,
+          evidence: outcome.evidence ?? null, checkedOn,
+        });
+        if (pauseMs > 0) await new Promise((resolve) => setTimeout(resolve, pauseMs));
+      }
+    }
+  }
+  return {
+    type: 'HandleChecks', version: 1,
+    method: 'read-only unauthenticated probes; free-looking is not a reservation; the registration form is the authority',
+    results,
+  };
+}
